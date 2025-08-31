@@ -57,6 +57,7 @@ import type PersonDto from '@/models/people/PersonDto'
 import RemoteService from '@/services/RemoteService'
 
 const dialog = ref(false)
+const form = ref()
 
 const emit = defineEmits(['person-created'])
 
@@ -93,16 +94,35 @@ const typeMappings = {
 
 const newPerson = ref<PersonDto>({
   name: '',
+  istId: '',
+  email: '',
   type: ''
 })
 
-const savePerson = async () => {
-  newPerson.value.type = typeMappings[newPerson.value.type as keyof typeof typeMappings]
-  await RemoteService.createPerson(newPerson.value)
+const resetForm = () => {
   newPerson.value = {
     name: '',
+    istId: '',
+    email: '',
     type: ''
   }
-  emit('person-created')
+  if (form.value) {
+    form.value.reset()
+  }
+}
+
+const savePerson = async () => {
+  let personType = newPerson.value.type
+  try {
+    newPerson.value.type = typeMappings[newPerson.value.type as keyof typeof typeMappings]
+    await RemoteService.createPerson(newPerson.value)
+
+    resetForm()
+    dialog.value = false
+    emit('person-created')
+  } catch (error) {
+    console.error('Error creating person:', error)
+    newPerson.value.type = personType
+  }
 }
 </script>

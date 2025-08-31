@@ -76,6 +76,13 @@ const headers = [
     filterable: true
   },
   {
+    title: 'E-mail',
+    key: 'email',
+    value: 'email',
+    sortable: true,
+    filterable: true
+  },
+  {
     title: 'Tipo',
     key: 'type',
     value: 'type',

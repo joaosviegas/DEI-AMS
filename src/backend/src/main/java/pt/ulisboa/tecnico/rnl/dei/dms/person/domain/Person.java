@@ -30,6 +30,9 @@ public class Person {
 	@Column(name = "ist_id", nullable = false, unique = true)
 	private String istId;
 
+	@Column(name="email", nullable=false, unique=true)
+	private String email;
+
 	@Column(name = "type", nullable = false)
 	@Enumerated(EnumType.STRING)
     private PersonType type;
@@ -40,14 +43,15 @@ public class Person {
 	protected Person() {
 	}
 
-	public Person(String name, String istId, PersonType type) {
+	public Person(String name, String istId, String email, PersonType type) {
 		this.name = name;
 		this.istId = istId;
+		this.email= email;
 		this.type = type;
 	}
 
 	public Person(PersonDto personDto) {
-		this(personDto.name(), personDto.istId(),
+		this(personDto.name(), personDto.istId(), personDto.email(),
 				PersonType.valueOf(personDto.type().toUpperCase()));
 		System.out.println("PersonDto: " + personDto);
 		System.out.println("PersonType: " + personDto.type());

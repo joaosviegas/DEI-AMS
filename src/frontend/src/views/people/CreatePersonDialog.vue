@@ -15,6 +15,7 @@
         <v-card-text>
           <v-text-field label="Nome*" required v-model="newPerson.name"></v-text-field>
           <v-text-field label="IST ID*" required v-model="newPerson.istId"></v-text-field>
+          <v-text-field label="Email*" required v-model="newPerson.email"></v-text-field>
 
             <v-select
             :items="['Administrador', 'Professor Regente', 'Professor Assistente', 'Aluno']"

@@ -12,6 +12,8 @@ import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
 
+import org.apache.commons.validator.routines.EmailValidator;
+
 // Service class for managing Person entities
 @Service
 @Transactional
@@ -25,6 +27,10 @@ public class PersonService {
 				.orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_PERSON, Long.toString(id)));
 	}
 
+	private boolean isValidEmail(String email) {
+    	return EmailValidator.getInstance().isValid(email);
+	}
+
 	@Transactional
 	public List<PersonDto> getPeople() {
 		return personRepository.findAll().stream()
@@ -34,8 +40,18 @@ public class PersonService {
 
 	@Transactional
 	public PersonDto createPerson(PersonDto personDto) {
-		if (personRepository.existsByIstId(personDto.istId())) {
+		if (personDto.name() == null || personDto.name().isBlank()) {
+			throw new DEIException(ErrorMessage.PERSON_NAME_NOT_VALID);
+			
+		} else if (personDto.email() == null || personDto.email().isBlank() || !isValidEmail(personDto.email())) {
+			throw new DEIException(ErrorMessage.PERSON_EMAIL_NOT_VALID, personDto.email());
+
+		} else if (personDto.type() == null || personDto.type().isBlank()) {
+			throw new DEIException(ErrorMessage.PERSON_TYPE_NOT_VALID);
+
+		} else if (personRepository.existsByIstId(personDto.istId())) {
 			throw new DEIException(ErrorMessage.PERSON_ALREADY_EXISTS, personDto.istId());
+
 		} else if (personRepository.existsByEmail(personDto.email())) {
 			throw new DEIException(ErrorMessage.EMAIL_ALREADY_EXISTS, personDto.email());
 		}

@@ -15,7 +15,7 @@
         <v-form ref="form" v-model="isFormValid">
           <v-card-text>
             <v-text-field label="Nome*" required v-model="newPerson.name" :rules="nameRules"></v-text-field>
-            <v-text-field label="IST ID*" required v-model="newPerson.istId" :rules="istIdRules"></v-text-field>
+            <v-text-field label="IST ID*" required v-model="newPerson.istId" :rules="istIdRules" placeholder="ist123456"></v-text-field>
             <v-text-field label="E-mail*" required v-model="newPerson.email" :rules="emailRules"></v-text-field>
 
               <v-select
@@ -33,11 +33,11 @@
         <v-card-actions>
           <v-spacer></v-spacer>
 
-          <v-btn text="Close" variant="plain" @click="dialog = false"></v-btn>
+          <v-btn text="Sair" variant="plain" @click="dialog = false"></v-btn>
 
           <v-btn
             color="primary"
-            text="Save"
+            text="Guardar"
             variant="tonal"
             :disabled="!isFormValid"
             @click="
@@ -64,8 +64,15 @@ const isFormValid = ref(false)
 
 // Validation rules
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
-const istIdRules = [(v: string) => !!v|| 'IST ID é obrigatório',
-  (v: string) => /^\d+$/.test(v) || 'IST ID deve conter apenas números'
+const istIdRules = [
+  (v: string) => !!v || 'IST ID é obrigatório',
+  (v: string) => {
+    const pattern = /^ist(\d{1,7})$/i
+    const match = v.match(pattern)
+    if (!match) return 'IST ID deve começar com "ist" seguido de números (ex: ist123456)'
+    const number = parseInt(match[1])
+    return (number >= 1 && number <= 9999999) || 'Número deve estar entre 1 e 9999999'
+  }
 ]
 const typeRules = [(v: string) => !!v || 'Categoria é obrigatória']
 

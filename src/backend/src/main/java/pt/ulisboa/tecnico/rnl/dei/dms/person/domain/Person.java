@@ -4,11 +4,15 @@ package pt.ulisboa.tecnico.rnl.dei.dms.person.domain;
 import jakarta.persistence.*;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 
 // Domain class representing a person in the system
 @Data
 @Entity
+@Getter
+@Setter
 @Table(name = "people")
 public class Person {
 

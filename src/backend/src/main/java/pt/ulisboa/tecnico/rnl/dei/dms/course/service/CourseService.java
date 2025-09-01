@@ -45,6 +45,9 @@ public class CourseService {
 
         } else if (courseRepository.existsByName(courseDto.name())) {
             throw new DEIException(ErrorMessage.COURSE_NAME_ALREADY_EXISTS, courseDto.name());
+
+        } else if (courseDto.duration() == null || courseDto.duration() <= 0) {
+            throw new DEIException(ErrorMessage.COURSE_DURATION_NOT_VALID);
         }
         
         Course course = new Course(courseDto);

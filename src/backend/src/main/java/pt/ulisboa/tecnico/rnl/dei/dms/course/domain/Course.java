@@ -24,15 +24,19 @@ public class Course {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Column(name = "duration", nullable = false)
+    private Integer duration;
+
     protected Course() {
     }
 
-    public Course(String code, String name) {
+    public Course(String code, String name, Integer duration) {
         this.code = code;
         this.name = name;
+        this.duration = duration;
     }
 
     public Course(CourseDto courseDto) {
-        this(courseDto.code(), courseDto.name());
+        this(courseDto.code(), courseDto.name(), courseDto.duration());
     }
 }

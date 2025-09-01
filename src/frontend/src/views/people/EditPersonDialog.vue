@@ -28,7 +28,7 @@
           color="primary"
           text="Atualizar"
           variant="tonal"
-          :disabled="!isFormValid"
+          :disabled="!canUpdate"
           @click="updatePerson"
         ></v-btn>
       </v-card-actions>
@@ -60,6 +60,14 @@ const isFormValid = ref(false)
 const localDialog = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
+})
+
+// Store the original person data to compare
+const originalPerson = ref<PersonDto>({
+  name: '',
+  istId: '',
+  email: '',
+  type: ''
 })
 
 // Validation rules
@@ -105,12 +113,34 @@ const editPerson = ref<PersonDto>({
   type: ''
 })
 
+// Check if there's any changes
+const hasChanges = computed(() => {
+  return (
+    editPerson.value.name !== originalPerson.value.name ||
+    editPerson.value.istId !== originalPerson.value.istId ||
+    editPerson.value.email !== originalPerson.value.email ||
+    editPerson.value.type !== originalPerson.value.type
+  )
+})
+
+const canUpdate = computed(() => {
+  return isFormValid.value && hasChanges.value
+})
+
 // Watch for prop changes and update editPerson
 watch(() => props.person, (newPerson) => {
   if (newPerson) {
+    const displayType = reverseTypeMappings[newPerson.type as keyof typeof reverseTypeMappings] || newPerson.type
+    
     editPerson.value = {
       ...newPerson,
-      type: reverseTypeMappings[newPerson.type as keyof typeof reverseTypeMappings] || newPerson.type
+      type: displayType
+    }
+    
+    // Store original data for comparison
+    originalPerson.value = {
+      ...newPerson,
+      type: displayType
     }
   }
 }, { immediate: true })
@@ -118,15 +148,22 @@ watch(() => props.person, (newPerson) => {
 // Reset form when dialog opens
 watch(localDialog, (newVal) => {
   if (newVal && props.person) {
+    const displayType = reverseTypeMappings[props.person.type as keyof typeof reverseTypeMappings] || props.person.type
+    
     editPerson.value = {
       ...props.person,
-      type: reverseTypeMappings[props.person.type as keyof typeof reverseTypeMappings] || props.person.type
+      type: displayType
+    }
+    
+    originalPerson.value = {
+      ...props.person,
+      type: displayType
     }
   }
 })
 
 const updatePerson = async () => {
-  if (!props.person?.id) return
+  if (!props.person?.id || !canUpdate.value) return
 
   try {
     const personToUpdate = { ...editPerson.value }

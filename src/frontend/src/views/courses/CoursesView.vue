@@ -57,6 +57,7 @@ import CreateCourseDialog from './CreateCourseDialog.vue'
 // import EditCourseDialog from './EditCourseDialog.vue'
 // import DeleteCourseDialog from './DeleteCourseDialog.vue'
 import { reactive, ref, computed } from 'vue'
+import { useRoleStore } from '@/stores/role'
 
 let search = ref('')
 let loading = ref(true)
@@ -65,12 +66,8 @@ const showDeleteDialog = ref(false)
 const showEditDialog = ref(false)
 const selectedCourse = ref<CourseDto>()
 
-// For now, assume admin check - you'll implement this based on your auth system
-const isAdmin = computed(() => {
-  // TODO: Replace with actual admin check
-  // return userStore.user?.type === 'ADMINISTRATOR'
-  return true // Temporary - shows all buttons
-})
+const roleStore = useRoleStore()
+const isAdmin = computed(() => roleStore.isAdministrator)
 
 const headers = computed(() => {
   const baseHeaders = [

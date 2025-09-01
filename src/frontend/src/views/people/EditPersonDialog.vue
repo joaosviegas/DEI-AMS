@@ -74,12 +74,14 @@ const originalPerson = ref<PersonDto>({
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 const istIdRules = [
   (v: string) => !!v || 'IST ID é obrigatório',
+  (v: string) => /^ist/i.test(v) || 'IST ID deve começar com "ist"',
+  (v: string) => /^ist\d+$/i.test(v) || 'IST ID deve conter apenas números após "ist"',
+  (v: string) => v.length >= 4 && v.length <= 10 || 'IST ID deve ter entre 4 e 9 caracteres (ist + 1-7 dígitos)',
   (v: string) => {
-    const pattern = /^ist(\d{1,6})$/i
-    const match = v.match(pattern)
-    if (!match) return 'IST ID deve começar com "ist" seguido de números (ex: ist123456)'
+    const match = v.match(/^ist(\d+)$/i)
+    if (!match) return true // Other rules will catch format issues
     const number = parseInt(match[1])
-    return (number >= 1 && number <= 999999) || 'Número deve estar entre 1 e 999999'
+    return (number >= 1 && number <= 9999999) || 'Número deve estar entre 1 e 9999999'
   }
 ]
 const typeRules = [(v: string) => !!v || 'Categoria é obrigatória']

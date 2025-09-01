@@ -49,16 +49,28 @@
 
   </v-data-table>
 
+  <DeletePersonDialog 
+    v-model="showDeleteDialog"
+    :person="selectedPerson"
+    @person-deleted="getPeople"
+  />
+
 </template>
 
 <script setup lang="ts">
-import type PeopleDto from '@/models/PeopleDto'
+import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
+import DeletePersonDialog from './DeletePersonDialog.vue'
 import { reactive, ref } from 'vue'
+import { get } from 'http'
 
 let search = ref('')
 let loading = ref(true)
+
+const showDeleteDialog = ref(false)
+const selectedPerson = ref<PersonDto>()
+
 const headers = [
   { title: 'ID', key: 'id', value: 'id', sortable: true, filterable: false },
   {
@@ -99,7 +111,7 @@ const headers = [
   // TODO: maybe add another column with possible actions? (edit / delete)
 ]
 
-const people: PeopleDto[] = reactive([])
+const people: PersonDto[] = reactive([])
 
 getPeople()
 async function getPeople() {
@@ -109,12 +121,14 @@ async function getPeople() {
   console.log(people)
 }
 
-const editPerson = (person: PeopleDto) => {
+const editPerson = (person: PersonDto) => {
   console.log('Editing person:', person)
 }
 
-const deletePerson = (person: PeopleDto) => {
-  console.log('Deleting person:', person)
+// Open the delete dialog
+const deletePerson = (person: PersonDto) => {
+  selectedPerson.value = person
+  showDeleteDialog.value = true
 }
 
 

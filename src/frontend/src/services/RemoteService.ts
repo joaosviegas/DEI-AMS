@@ -18,6 +18,10 @@ export default class RemoteServices {
     return httpClient.post('/people', person)
   }
 
+  static async deletePerson(id: number): Promise<void> {
+    return httpClient.delete(`/people/${id}`)
+  }
+
   static async errorMessage(error: any): Promise<string> {
     if (error.message === 'Network Error') {
       return 'Unable to connect to the server'

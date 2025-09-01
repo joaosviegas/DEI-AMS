@@ -11,7 +11,7 @@
         ></v-btn>
       </template>
 
-      <v-card prepend-icon="mdi-account" title="Nova">
+      <v-card prepend-icon="mdi-account" title="Adicionar Pessoa">
         <v-form ref="form" v-model="isFormValid">
           <v-card-text>
             <v-text-field label="Nome*" required v-model="newPerson.name" :rules="nameRules"></v-text-field>

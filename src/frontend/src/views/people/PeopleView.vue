@@ -49,6 +49,12 @@
 
   </v-data-table>
 
+  <EditPersonDialog 
+    v-model="showEditDialog"
+    :person="selectedPerson"
+    @person-updated="getPeople"
+  />
+
   <DeletePersonDialog 
     v-model="showDeleteDialog"
     :person="selectedPerson"
@@ -62,6 +68,7 @@ import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
 import DeletePersonDialog from './DeletePersonDialog.vue'
+import EditPersonDialog from './EditPersonDialog.vue'
 import { reactive, ref } from 'vue'
 import { get } from 'http'
 
@@ -69,6 +76,7 @@ let search = ref('')
 let loading = ref(true)
 
 const showDeleteDialog = ref(false)
+const showEditDialog = ref(false)
 const selectedPerson = ref<PersonDto>()
 
 const headers = [
@@ -121,12 +129,16 @@ async function getPeople() {
   console.log(people)
 }
 
+// Open the edit dialog
 const editPerson = (person: PersonDto) => {
   console.log('Editing person:', person)
+  selectedPerson.value = person
+  showEditDialog.value = true
 }
 
 // Open the delete dialog
 const deletePerson = (person: PersonDto) => {
+  console.log('Deleting person:', person)
   selectedPerson.value = person
   showDeleteDialog.value = true
 }

@@ -21,7 +21,7 @@
       <v-btn size="small" @click="changeRole('student')">Aluno</v-btn>
       <v-btn size="small" @click="changeRole('teaching_assistant')">Professor Assistente</v-btn>
       <v-btn size="small" @click="changeRole('main_teacher')">Professor Regente</v-btn>
-      <v-btn size="small" @click="changeRole('s')">Administrador</v-btn>
+      <v-btn size="small" @click="changeRole('administrator')">Administrador</v-btn>
     </v-toolbar-items>
     <v-toolbar-items class="ms-2">
       <v-btn size="small" variant="text">

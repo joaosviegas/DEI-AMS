@@ -4,6 +4,7 @@ import { useAppearanceStore } from '@/stores/appearance'
 import DeiError from '@/models/DeiError'
 import type PersonDto from '@/models/PersonDto'
 import type CourseDto from '@/models/CourseDto'
+import type CurricularUnitDto from '@/models/CurricularUnitDto'
 
 const httpClient = axios.create()
 httpClient.defaults.timeout = 50000
@@ -41,6 +42,49 @@ export default class RemoteServices {
 
   static async updateCourse(id: number, course: CourseDto): Promise<CourseDto> {
     return httpClient.put(`/courses/${id}`, course)
+  }
+
+  // CurricularUnit methods
+  static async getCurricularUnits(): Promise<CurricularUnitDto[]> {
+    return httpClient.get('/curricular-units')
+  }
+
+  static async createCurricularUnit(data: any): Promise<CurricularUnitDto> {
+    const params = new URLSearchParams(data)
+    return httpClient.post('/curricular-units', null, { params })
+  }
+
+  static async deleteCurricularUnit(id: number): Promise<void> {
+    return httpClient.delete(`/curricular-units/${id}`)
+  }
+
+  static async updateCurricularUnit(id: number, data: any): Promise<CurricularUnitDto> {
+    const params = new URLSearchParams(data)
+    return httpClient.put(`/curricular-units/${id}`, null, { params })
+  }
+
+  static async addCourseToCurricularUnit(curricularUnitId: number, courseId: number): Promise<CurricularUnitDto> {
+    return httpClient.post(`/curricular-units/${curricularUnitId}/courses/${courseId}`)
+  }
+
+  static async removeCourseFromCurricularUnit(curricularUnitId: number, courseId: number): Promise<CurricularUnitDto> {
+    return httpClient.delete(`/curricular-units/${curricularUnitId}/courses/${courseId}`)
+  }
+
+  static async addAssistantTeacher(curricularUnitId: number, teacherId: number): Promise<CurricularUnitDto> {
+    return httpClient.post(`/curricular-units/${curricularUnitId}/assistant-teachers/${teacherId}`)
+  }
+
+  static async removeAssistantTeacher(curricularUnitId: number, teacherId: number): Promise<CurricularUnitDto> {
+    return httpClient.delete(`/curricular-units/${curricularUnitId}/assistant-teachers/${teacherId}`)
+  }
+
+  static async addStudent(curricularUnitId: number, studentId: number): Promise<CurricularUnitDto> {
+    return httpClient.post(`/curricular-units/${curricularUnitId}/students/${studentId}`)
+  }
+
+  static async removeStudent(curricularUnitId: number, studentId: number): Promise<CurricularUnitDto> {
+    return httpClient.delete(`/curricular-units/${curricularUnitId}/students/${studentId}`)
   }
 
   static async errorMessage(error: any): Promise<string> {

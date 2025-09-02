@@ -3,7 +3,7 @@
     <v-col>
       <h2 class="text-left ml-1">Listagem de Pessoas</h2>
     </v-col>
-    <v-col cols="auto">
+    <v-col cols="auto" v-if="isAdmin">
       <CreatePersonDialog @person-created="getPeople" />
     </v-col>
   </v-row>
@@ -42,20 +42,22 @@
         Aluno
       </v-chip>
     </template>
-    <template v-slot:[`item.actions`]="{ item }">
+    <template v-slot:[`item.actions`]="{ item }" v-if="isAdmin">
       <v-icon @click="editPerson(item)" class="mr-2">mdi-pencil</v-icon>
       <v-icon @click="deletePerson(item)">mdi-delete</v-icon>
     </template>
 
   </v-data-table>
 
-  <EditPersonDialog 
+  <EditPersonDialog
+    v-if="isAdmin"
     v-model="showEditDialog"
     :person="selectedPerson"
     @person-updated="getPeople"
   />
 
-  <DeletePersonDialog 
+  <DeletePersonDialog
+    v-if="isAdmin"
     v-model="showDeleteDialog"
     :person="selectedPerson"
     @person-deleted="getPeople"
@@ -64,60 +66,70 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, ref, computed } from 'vue'
+import { useRoleStore } from '../../stores/role'
 import type PersonDto from '@/models/PersonDto'
 import RemoteService from '@/services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
 import DeletePersonDialog from './DeletePersonDialog.vue'
 import EditPersonDialog from './EditPersonDialog.vue'
-import { reactive, ref } from 'vue'
-import { get } from 'http'
 
 let search = ref('')
 let loading = ref(true)
+
+const roleStore = useRoleStore()
+const isAdmin = computed(() => roleStore.isAdministrator)
 
 const showDeleteDialog = ref(false)
 const showEditDialog = ref(false)
 const selectedPerson = ref<PersonDto>()
 
-const headers = [
-  { title: 'ID', key: 'id', value: 'id', sortable: true, filterable: false },
-  {
-    title: 'Nome',
-    key: 'name',
-    value: 'name',
-    sortable: true,
-    filterable: true
-  },
-  {
-    title: 'IST ID',
-    key: 'istId',
-    value: 'istId',
-    sortable: true,
-    filterable: true
-  },
-  {
-    title: 'E-mail',
-    key: 'email',
-    value: 'email',
-    sortable: true,
-    filterable: true
-  },
-  {
-    title: 'Tipo',
-    key: 'type',
-    value: 'type',
-    sortable: true,
-    filterable: true
-  },
-  {
-    title: 'Ações',
-    key: 'actions',
-    value: 'actions',
-    sortable: false,
-    filterable: false
+const headers = computed(() => {
+  const baseHeaders = [
+    { title: 'ID', key: 'id', value: 'id', sortable: true, filterable: false },
+    {
+      title: 'Nome',
+      key: 'name',
+      value: 'name',
+      sortable: true,
+      filterable: true
+    },
+    {
+      title: 'IST ID',
+      key: 'istId',
+      value: 'istId',
+      sortable: true,
+      filterable: true
+    },
+    {
+      title: 'E-mail',
+      key: 'email',
+      value: 'email',
+      sortable: true,
+      filterable: true
+    },
+    {
+      title: 'Tipo',
+      key: 'type',
+      value: 'type',
+      sortable: true,
+      filterable: true
+    }
+  ]
+  
+  // Only add actions column for admins
+  if (isAdmin.value) {
+    baseHeaders.push({
+      title: 'Ações',
+      key: 'actions',
+      value: 'actions',
+      sortable: false,
+      filterable: false
+    })
   }
-  // TODO: maybe add another column with possible actions? (edit / delete)
-]
+  
+  return baseHeaders
+})
 
 const people: PersonDto[] = reactive([])
 

@@ -60,6 +60,7 @@
               label="Cursos"
               multiple
               v-model="newCurricularUnit.courseIds"
+              :rules="coursesRules"
               :loading="loadingCourses"
               chips
               closable-chips
@@ -141,6 +142,10 @@ const ectsRules = [
 ]
 
 const mainTeacherRules = [(v: number) => !!v || 'Professor Regente é obrigatório']
+
+const coursesRules = [
+  (v: number[]) => v && v.length > 0 || 'Pelo menos um curso é obrigatório'
+]
 
 // Load teachers and courses on mount
 onMounted(async () => {

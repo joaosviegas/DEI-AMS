@@ -71,80 +71,10 @@
   </v-data-table>
 
   <!-- Details Dialog -->
-  <v-dialog v-model="showDetailsDialog" max-width="800">
-    <v-card v-if="selectedCurricularUnit">
-      <v-card-title class="d-flex justify-space-between align-center">
-        <span class="text-h5">{{ selectedCurricularUnit.name }}</span>
-        <v-btn 
-          icon="mdi-close" 
-          variant="text" 
-          size="small"
-          @click="showDetailsDialog = false"
-        ></v-btn>
-      </v-card-title>
-
-      <v-card-text>
-        <v-row>
-          <v-col cols="6">
-            <strong>Código:</strong> {{ selectedCurricularUnit.code }}
-          </v-col>
-          <v-col cols="6">
-            <strong>ECTS:</strong> {{ selectedCurricularUnit.ects }}
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="6">
-            <strong>Semestre:</strong> {{ getSemesterText(selectedCurricularUnit.semester) }}
-          </v-col>
-          <v-col cols="6">
-            <strong>Professor Regente:</strong> {{ selectedCurricularUnit.mainTeacher.name }}
-          </v-col>
-        </v-row>
-
-        <v-divider class="my-4"></v-divider>
-
-        <v-tabs v-model="activeTab" class="mt-6">
-          <v-tab>Professores</v-tab>
-          <v-tab>Alunos</v-tab>
-        </v-tabs>
-
-        <v-tabs-window v-model="activeTab">
-          <!-- Teachers Tab -->
-          <v-tabs-window-item>
-            <v-data-table
-              :headers="teacherHeaders"
-              :items="allTeachers"
-              class="mt-4"
-              no-data-text="Sem professores a apresentar."
-            >
-              <template v-slot:[`item.type`]="{ item }">
-                <v-chip 
-                  :color="item.type === 'Regente' ? 'red' : 'blue'" 
-                  size="small"
-                >
-                  {{ item.type }}
-                </v-chip>
-              </template>
-            </v-data-table>
-          </v-tabs-window-item>
-
-          <!-- Students Tab -->
-          <v-tabs-window-item>
-            <v-data-table
-              :headers="studentHeaders"
-              :items="allStudents"
-              class="mt-4"
-              no-data-text="Sem alunos a apresentar."
-            >
-              <template v-slot:[`item.status`]="{ item }">
-              </template>
-              <!-- TODO: Status will be implemented later when backend supports it -->
-            </v-data-table>
-          </v-tabs-window-item>
-        </v-tabs-window>
-      </v-card-text>
-    </v-card>
-  </v-dialog>
+  <CurricularUnitDetailsDialog 
+    v-model="showDetailsDialog"
+    :curricular-unit="selectedCurricularUnit"
+  />
 
   <!-- Edit Dialog -->
   <EditCurricularUnitDialog 
@@ -180,10 +110,10 @@ import CreateCurricularUnitDialog from './CreateCurricularUnitsDialog.vue'
 import EditCurricularUnitDialog from './EditCurricularUnitsDialog.vue'
 import DeleteCurricularUnitDialog from './DeleteCurricularUnitsDialog.vue'
 import AddPeopleDialog from './AddPeopleDialog.vue'
+import CurricularUnitDetailsDialog from './CurricularUnitDetailsDialog.vue'
 
 let search = ref('')
 let loading = ref(true)
-let activeTab = ref(0)
 
 const showDetailsDialog = ref(false)
 const showDeleteDialog = ref(false)
@@ -252,49 +182,7 @@ const headers = computed(() => {
   return baseHeaders
 })
 
-const teacherHeaders = [
-  { title: 'Nome', key: 'name', value: 'name' },
-  { title: 'IST ID', key: 'istId', value: 'istId' },
-  { title: 'Email', key: 'email', value: 'email' },
-  { title: 'Tipo', key: 'type', value: 'type' }
-]
-
-const studentHeaders = [
-  { title: 'Nome', key: 'name', value: 'name' },
-  { title: 'IST ID', key: 'istId', value: 'istId' },
-  { title: 'Email', key: 'email', value: 'email' }
-  // Status will be added later when backend supports it
-  // { title: 'Estado', key: 'status', value: 'status' }
-]
-
 const curricularUnits: CurricularUnitDto[] = reactive([])
-
-const allTeachers = computed(() => {
-  if (!selectedCurricularUnit.value) return []
-  
-  const teachers = []
-  
-  // Add main teacher
-  teachers.push({
-    ...selectedCurricularUnit.value.mainTeacher,
-    type: 'Regente'
-  })
-  
-  // Add assistant teachers
-  selectedCurricularUnit.value.assistantTeachers.forEach(teacher => {
-    teachers.push({
-      ...teacher,
-      type: 'Assistente'
-    })
-  })
-  
-  return teachers
-})
-
-const allStudents = computed(() => {
-  if (!selectedCurricularUnit.value) return []
-  return selectedCurricularUnit.value.students || []
-})
 
 getCurricularUnits()
 async function getCurricularUnits() {
@@ -326,24 +214,6 @@ const getSemesterColor = (semester: string) => {
     'ANNUAL': 'orange'
   }
   return colorMap[semester] || 'grey'
-}
-
-const getStatusText = (status: string) => {
-  const statusMap: { [key: string]: string } = {
-    'inscrito': 'Inscrito',
-    'aprovado': 'Aprovado',
-    'reprovado': 'Reprovado'
-  }
-  return statusMap[status] || status
-}
-
-const getStatusColor = (status: string) => {
-  const colorMap: { [key: string]: string } = {
-    'inscrito': 'blue',
-    'aprovado': 'green',
-    'reprovado': 'red'
-  }
-  return colorMap[status] || 'grey'
 }
 
 // Action handlers

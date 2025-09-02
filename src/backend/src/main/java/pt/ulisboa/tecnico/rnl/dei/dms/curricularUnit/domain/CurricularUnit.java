@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.domain.Course;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -73,6 +74,9 @@ public class CurricularUnit {
     )
     private Set<Person> students = new HashSet<>();
 
+    @OneToMany(mappedBy = "curricularUnit")
+    private Set<StudentEnrollment> studentEnrollments = new HashSet<>();
+
     protected CurricularUnit() {
     }
 
@@ -124,7 +128,7 @@ public class CurricularUnit {
     }
 
     public boolean isStudent(Person person) {
-        return this.students.contains(person);
+        return isStudentEnrolled(person);
     }
 
     public boolean hasPermissionToManage(Person person) {
@@ -133,5 +137,28 @@ public class CurricularUnit {
 
     public boolean hasPermissionToAssess(Person person) {
         return isMainTeacher(person) || isAssistantTeacher(person);
+    }
+
+    // Helper methods for managing student enrollments
+    public void addStudentEnrollment(StudentEnrollment enrollment) {
+        this.studentEnrollments.add(enrollment);
+        enrollment.setCurricularUnit(this);
+    }
+
+    public void removeStudentEnrollment(StudentEnrollment enrollment) {
+        this.studentEnrollments.remove(enrollment);
+        enrollment.setCurricularUnit(null);
+    }
+
+    public boolean isStudentEnrolled(Person student) {
+        return this.studentEnrollments.stream()
+                .anyMatch(enrollment -> enrollment.getStudent().equals(student));
+    }
+
+    public StudentEnrollment getStudentEnrollment(Person student) {
+        return this.studentEnrollments.stream()
+                .filter(enrollment -> enrollment.getStudent().equals(student))
+                .findFirst()
+                .orElse(null);
     }
 }

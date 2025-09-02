@@ -24,7 +24,13 @@ public enum ErrorMessage {
 	CURRICULAR_UNIT_ALREADY_EXISTS("Já existe uma unidade curricular com o código %s", 3004),
 	CURRICULAR_UNIT_ECTS_NOT_VALID("O número de ECTS especificado não é válido.", 3005),
 	CURRICULAR_UNIT_SEMESTER_NOT_VALID("O semestre especificado não é válido.", 3006),
-	PERSON_NOT_MAIN_TEACHER("A pessoa especificada não é um professor regente.", 3007);
+	PERSON_NOT_MAIN_TEACHER("A pessoa especificada não é um professor regente.", 3007),
+
+	// StudentEnrollment errors
+	NO_SUCH_STUDENT_ENROLLMENT("Não existe nenhuma inscrição com o ID %s", 4001),
+	PERSON_NOT_STUDENT("A pessoa especificada não é um aluno.", 4002),
+	STUDENT_ALREADY_ENROLLED("O aluno já está inscrito nesta unidade curricular.", 4003),
+	ENROLLMENT_STATUS_NOT_VALID("O estado da inscrição especificado não é válido.", 4004);
 
 	private final String label;
 	private final int code;

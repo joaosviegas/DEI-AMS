@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.dto;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.dto.CourseDto;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.dto.StudentEnrollmentDto;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,7 +18,8 @@ public record CurricularUnitDto(
     PersonDto mainTeacher,
     Set<CourseDto> courses,
     Set<PersonDto> assistantTeachers,
-    Set<PersonDto> students
+    Set<PersonDto> students, // Keep this for backward compatibility
+    Set<StudentEnrollmentDto> studentEnrollments // New field for enrollment data
 ) {
     public CurricularUnitDto(CurricularUnit curricularUnit) {
         this(
@@ -35,6 +37,9 @@ public record CurricularUnitDto(
                 .collect(Collectors.toSet()),
             curricularUnit.getStudents().stream()
                 .map(PersonDto::new)
+                .collect(Collectors.toSet()),
+            curricularUnit.getStudentEnrollments().stream()
+                .map(StudentEnrollmentDto::new)
                 .collect(Collectors.toSet())
         );
     }

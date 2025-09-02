@@ -190,14 +190,19 @@ const resetForm = () => {
 
 const saveCurricularUnit = async () => {
   try {
-    await RemoteService.createCurricularUnit({
+    // First create the curricular unit without courses
+    const createdUnit = await RemoteService.createCurricularUnit({
       code: newCurricularUnit.value.code,
       name: newCurricularUnit.value.name,
       semester: newCurricularUnit.value.semester,
       ects: newCurricularUnit.value.ects.toString(),
-      mainTeacherId: newCurricularUnit.value.mainTeacherId?.toString(),
-      courseIds: newCurricularUnit.value.courseIds.join(',')
+      mainTeacherId: newCurricularUnit.value.mainTeacherId?.toString()
     })
+
+    // Then add each selected course
+    for (const courseId of newCurricularUnit.value.courseIds) {
+      await RemoteService.addCourseToCurricularUnit(createdUnit.id!, courseId)
+    }
 
     resetForm()
     dialog.value = false

@@ -193,7 +193,7 @@ const loadTeachers = async () => {
   try {
     const people = await RemoteService.getPeople()
     teacherOptions.value = people
-      .filter((person: PersonDto) => person.type === 'TEACHER')
+      .filter((person: PersonDto) => person.type === 'MAIN_TEACHER')
       .map((person: PersonDto) => ({
         text: `${person.name} (${person.istId})`,
         value: person.id!
@@ -275,14 +275,32 @@ const updateCurricularUnit = async () => {
   if (!props.curricularUnit?.id || !canUpdate.value) return
 
   try {
-    await RemoteService.updateCurricularUnit(props.curricularUnit.id, {
+    // First update the basic properties
+    const updatedUnit = await RemoteService.updateCurricularUnit(props.curricularUnit.id, {
       code: editCurricularUnit.value.code,
       name: editCurricularUnit.value.name,
       semester: editCurricularUnit.value.semester,
       ects: editCurricularUnit.value.ects.toString(),
-      mainTeacherId: editCurricularUnit.value.mainTeacherId.toString(),
-      courseIds: editCurricularUnit.value.courseIds.join(',')
+      mainTeacherId: editCurricularUnit.value.mainTeacherId.toString()
     })
+
+    // Handle course changes
+    const currentCourseIds = props.curricularUnit.courses?.map(c => c.id!) || []
+    const newCourseIds = editCurricularUnit.value.courseIds
+
+    // Remove courses that are no longer selected
+    for (const courseId of currentCourseIds) {
+      if (!newCourseIds.includes(courseId)) {
+        await RemoteService.removeCourseFromCurricularUnit(props.curricularUnit.id, courseId)
+      }
+    }
+
+    // Add newly selected courses
+    for (const courseId of newCourseIds) {
+      if (!currentCourseIds.includes(courseId)) {
+        await RemoteService.addCourseToCurricularUnit(props.curricularUnit.id, courseId)
+      }
+    }
     
     localDialog.value = false
     emit('curricular-unit-updated')

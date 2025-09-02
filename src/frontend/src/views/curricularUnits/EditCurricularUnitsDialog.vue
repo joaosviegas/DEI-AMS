@@ -8,14 +8,14 @@
             required 
             v-model="editCurricularUnit.code" 
             :rules="codeRules"
-            placeholder="COMP101"
+            placeholder="IAC"
           ></v-text-field>
           <v-text-field 
             label="Nome*" 
             required 
             v-model="editCurricularUnit.name" 
             :rules="nameRules"
-            placeholder="Programação I"
+            placeholder="Introdução à Arquitetura de Computadores"
           ></v-text-field>
           <v-select
             :items="semesterOptions"

@@ -19,14 +19,14 @@
               required 
               v-model="newCurricularUnit.code" 
               :rules="codeRules"
-              placeholder="IST123"
+              placeholder="IAC"
             ></v-text-field>
             <v-text-field 
               label="Nome*" 
               required 
               v-model="newCurricularUnit.name" 
               :rules="nameRules"
-              placeholder="Programação Orientada a Objetos"
+              placeholder="Introdução à Arquitetura de Computadores"
             ></v-text-field>
             <v-select
               :items="semesterOptions"
@@ -125,7 +125,7 @@ const semesterOptions = [
 // Validation rules
 const codeRules = [
   (v: string) => !!v || 'Código é obrigatório',
-  (v: string) => v.length >= 3 && v.length <= 10 || 'Código deve ter entre 3 e 10 caracteres',
+  (v: string) => v.length >= 2 && v.length <= 10 || 'Código deve ter entre 2 e 10 caracteres',
   (v: string) => /^[A-Z0-9-]+$/i.test(v) || 'Código deve conter apenas letras, números e "-"'
 ]
 

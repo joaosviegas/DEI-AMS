@@ -60,8 +60,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type CourseDto from '@/models/courses/CourseDto'
-import RemoteService from '@/services/RemoteService'
+import CourseDto from '../../models/CourseDto'
+import RemoteService from '../../services/RemoteService'
 
 const dialog = ref(false)
 const form = ref()

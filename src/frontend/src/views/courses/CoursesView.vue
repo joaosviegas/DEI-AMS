@@ -28,36 +28,34 @@
     no-data-text="Sem cursos a apresentar."
   >
     <template v-slot:[`item.actions`]="{ item }" v-if="isAdmin">
-      <v-icon @click="editCourse(item)" class="mr-2" disabled>mdi-pencil</v-icon>
-      <v-icon @click="deleteCourse(item)" disabled>mdi-delete</v-icon>
+      <v-icon @click="editCourse(item)" class="mr-2" tonal>mdi-pencil</v-icon>
+      <v-icon @click="deleteCourse(item)" tonal>mdi-delete</v-icon>
     </template>
   </v-data-table>
 
-  <!-- 
   <EditCourseDialog 
     v-if="isAdmin"
     v-model="showEditDialog"
     :course="selectedCourse"
     @course-updated="getCourses"
   />
-
+  
   <DeleteCourseDialog 
     v-if="isAdmin"
     v-model="showDeleteDialog"
     :course="selectedCourse"
     @course-deleted="getCourses"
   />
-  -->
 </template>
 
 <script setup lang="ts">
-import type CourseDto from '@/models/courses/CourseDto'
-import RemoteService from '@/services/RemoteService'
+import CourseDto from '../../models/CourseDto'
+import RemoteService from '../../services/RemoteService'
 import CreateCourseDialog from './CreateCourseDialog.vue'
-// import EditCourseDialog from './EditCourseDialog.vue'
-// import DeleteCourseDialog from './DeleteCourseDialog.vue'
+import EditCourseDialog from './EditCourseDialog.vue'
+import DeleteCourseDialog from './DeleteCourseDialog.vue'
 import { reactive, ref, computed } from 'vue'
-import { useRoleStore } from '@/stores/role'
+import { useRoleStore } from '../../stores/role'
 
 let search = ref('')
 let loading = ref(true)
@@ -123,14 +121,14 @@ async function getCourses() {
   }
 }
 
-// Open the edit dialog TODO
+// Open the edit dialog
 const editCourse = (course: CourseDto) => {
   console.log('Editing course:', course)
   selectedCourse.value = course
   showEditDialog.value = true
 }
 
-// Open the delete dialog TODO
+// Open the delete dialog
 const deleteCourse = (course: CourseDto) => {
   console.log('Deleting course:', course)
   selectedCourse.value = course

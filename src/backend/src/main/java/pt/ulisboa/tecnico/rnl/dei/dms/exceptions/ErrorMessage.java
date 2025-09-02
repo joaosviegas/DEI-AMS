@@ -15,7 +15,16 @@ public enum ErrorMessage {
 	COURSE_NAME_NOT_VALID("O nome do curso especificado não é válido.", 2003),
 	COURSE_ALREADY_EXISTS("Já existe um curso com o código %s", 2004),
 	COURSE_NAME_ALREADY_EXISTS("Já existe um curso com o nome %s", 2005),
-	COURSE_DURATION_NOT_VALID("A duração do curso especificada não é válida.", 2006);
+	COURSE_DURATION_NOT_VALID("A duração do curso especificada não é válida.", 2006),
+
+	// CurricularUnit errors
+	NO_SUCH_CURRICULAR_UNIT("Não existe nenhuma unidade curricular com o ID %s", 3001),
+	CURRICULAR_UNIT_CODE_NOT_VALID("O código da unidade curricular especificado não é válido.", 3002),
+	CURRICULAR_UNIT_NAME_NOT_VALID("O nome da unidade curricular especificado não é válido.", 3003),
+	CURRICULAR_UNIT_ALREADY_EXISTS("Já existe uma unidade curricular com o código %s", 3004),
+	CURRICULAR_UNIT_ECTS_NOT_VALID("O número de ECTS especificado não é válido.", 3005),
+	CURRICULAR_UNIT_SEMESTER_NOT_VALID("O semestre especificado não é válido.", 3006),
+	PERSON_NOT_MAIN_TEACHER("A pessoa especificada não é um professor regente.", 3007);
 
 	private final String label;
 	private final int code;

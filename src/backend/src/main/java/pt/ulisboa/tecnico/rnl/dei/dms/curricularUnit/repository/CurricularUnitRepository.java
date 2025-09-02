@@ -1,0 +1,35 @@
+package pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository;
+
+import java.util.Optional;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
+import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
+import pt.ulisboa.tecnico.rnl.dei.dms.course.domain.Course;
+
+// Repository interface for managing CurricularUnit entities
+@Repository
+@Transactional
+public interface CurricularUnitRepository extends JpaRepository<CurricularUnit, Long> {
+    Optional<CurricularUnit> findByCode(String code);
+    boolean existsByCode(String code);
+    
+    // Find CUs by main teacher
+    List<CurricularUnit> findByMainTeacher(Person mainTeacher);
+    
+    // Find CUs by course
+    List<CurricularUnit> findByCourses(Course course);
+    
+    // Find CUs by semester
+    List<CurricularUnit> findBySemester(CurricularUnit.Semester semester);
+    
+    // Find CUs where a person is an assistant teacher
+    List<CurricularUnit> findByAssistantTeachersContaining(Person person);
+    
+    // Find CUs where a person is a student
+    List<CurricularUnit> findByStudentsContaining(Person person);
+}

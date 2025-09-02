@@ -2,20 +2,20 @@ import { defineStore } from 'pinia'
 
 export const useRoleStore = defineStore('role', {
   state: () => ({
-    currentRole: 'administrator',
+    currentRole: 'ADMINISTRATOR',
   }),
   getters: {
     isAdministrator(): boolean {
-      return this.currentRole === 'administrator'
+      return this.currentRole === 'ADMINISTRATOR'
     },
     isMainTeacher(): boolean {
-      return this.currentRole === 'main_teacher'
+      return this.currentRole === 'MAIN_TEACHER'
     },
     isTeachingAssistant(): boolean {
-      return this.currentRole === 'teaching_assistant'
+      return this.currentRole === 'TEACHING_ASSISTANT'
     },
     isStudent(): boolean {
-      return this.currentRole === 'student'
+      return this.currentRole === 'STUDENT'
     },
     currentActiveRole(): string {
         return this.currentRole

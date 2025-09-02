@@ -2,7 +2,8 @@
   <v-container>
     <v-row class="mt-4">
       <v-col cols="12" class="text-center">
-        <h1 class="text-h3 mb-6">{{ welcomeMessage }}</h1>
+        <h1 class="text-h3 mb-6">Bem-vindo ao <strong>AMS</strong>!</h1>
+        <h2 class="text-h5 mb-6">Sistema de Gestão Académica</h2>
       </v-col>
     </v-row>
 
@@ -58,62 +59,57 @@
 import { computed } from 'vue';
 import { useRoleStore } from '../stores/role';
 
-const appName = 'AMS - Sistema de Gestão Académica';
 const roleStore = useRoleStore();
 const currentRole = computed(() => roleStore.currentActiveRole);
 
-const welcomeMessage = computed(() => {
-  return `Bem-vindo ao ${appName}!`;
-});
-
 const roleName = computed(() => {
   switch(currentRole.value) {
-    case 'administrator': return 'Administrador';
-    case 'main_teacher': return 'Professor Regente';
-    case 'teaching_assistant': return 'Professor Assistente';
-    case 'student': return 'Aluno';
+    case 'ADMINISTRATOR': return 'Administrador';
+    case 'MAIN_TEACHER': return 'Professor Regente';
+    case 'TEACHING_ASSISTANT': return 'Professor Assistente';
+    case 'STUDENT': return 'Aluno';
     default: return 'Usuário';
   }
 });
 
 const roleColor = computed(() => {
   switch(currentRole.value) {
-    case 'administrator': return 'purple';
-    case 'main_teacher': return 'red';
-    case 'teaching_assistant': return 'blue';
-    case 'student': return 'green';
+    case 'ADMINISTRATOR': return 'purple';
+    case 'MAIN_TEACHER': return 'red';
+    case 'TEACHING_ASSISTANT': return 'blue';
+    case 'STUDENT': return 'green';
     default: return 'grey';
   }
 });
 
 const roleIcon = computed(() => {
   switch(currentRole.value) {
-    case 'administrator': return 'mdi-shield-account';
-    case 'main_teacher': return 'mdi-account-tie';
-    case 'teaching_assistant': return 'mdi-account-school';
-    case 'student': return 'mdi-school';
+    case 'ADMINISTRATOR': return 'mdi-shield-account';
+    case 'MAIN_TEACHER': return 'mdi-account-tie';
+    case 'TEACHING_ASSISTANT': return 'mdi-account-school';
+    case 'STUDENT': return 'mdi-school';
     default: return 'mdi-account';
   }
 });
 
 const roleDescription = computed(() => {
   switch(currentRole.value) {
-    case 'administrator':
+    case 'ADMINISTRATOR':
       return 'Como Administrador, você tem acesso completo ao sistema para gerir pessoas, cursos, unidades curriculares e visualizar estatísticas.';
-    case 'main_teacher':
+    case 'MAIN_TEACHER':
       return 'Como Professor Regente, você pode gerir as suas unidades curriculares, adicionar professores assistentes e Alunos.';
-    case 'teaching_assistant':
+    case 'TEACHING_ASSISTANT':
       return 'Como Professor Assistente, você pode visualizar as unidades curriculares onde está envolvido e consultar informações dos Alunos.';
-    case 'student':
+    case 'STUDENT':
       return 'Como Aluno, você pode visualizar as suas unidades curriculares, professores e colegas de turma.';
     default:
-      return 'Selecione uma role para visualizar suas funcionalidades.';
+      return 'Selecione um role para visualizar as funcionalidades.';
   }
 });
 
 const features = computed(() => {
   switch(currentRole.value) {
-    case 'administrator':
+    case 'ADMINISTRATOR':
       return [
         {
           title: 'Gestão de Pessoas',
@@ -140,7 +136,7 @@ const features = computed(() => {
           route: '/statistics'
         }
       ];
-    case 'main_teacher':
+    case 'MAIN_TEACHER':
       return [
         {
           title: 'Minhas Unidades Curriculares',
@@ -167,7 +163,7 @@ const features = computed(() => {
           route: '/statistics'
         }
       ];
-    case 'teaching_assistant':
+    case 'TEACHING_ASSISTANT':
       return [
         {
           title: 'Unidades Curriculares',
@@ -188,7 +184,7 @@ const features = computed(() => {
           route: '/courses'
         }
       ];
-    case 'student':
+    case 'STUDENT':
       return [
         {
           title: 'Minhas Unidades Curriculares',

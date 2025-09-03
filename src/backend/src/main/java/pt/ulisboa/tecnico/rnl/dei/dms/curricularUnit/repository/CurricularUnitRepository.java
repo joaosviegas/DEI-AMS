@@ -35,4 +35,12 @@ public interface CurricularUnitRepository extends JpaRepository<CurricularUnit, 
     // Find CUs where a person is enrolled as a student (through StudentEnrollment)
     @Query("SELECT DISTINCT cu FROM CurricularUnit cu JOIN cu.studentEnrollments se WHERE se.student = :student")
     List<CurricularUnit> findByStudentEnrollments_Student(@Param("student") Person student);
+    
+    // Eagerly fetch curricular unit with student enrollments
+    @Query("SELECT cu FROM CurricularUnit cu LEFT JOIN FETCH cu.studentEnrollments se LEFT JOIN FETCH se.student WHERE cu.id = :id")
+    Optional<CurricularUnit> findByIdWithStudentEnrollments(@Param("id") Long id);
+    
+    // Eagerly fetch all curricular units with student enrollments
+    @Query("SELECT DISTINCT cu FROM CurricularUnit cu LEFT JOIN FETCH cu.studentEnrollments se LEFT JOIN FETCH se.student")
+    List<CurricularUnit> findAllWithStudentEnrollments();
 }

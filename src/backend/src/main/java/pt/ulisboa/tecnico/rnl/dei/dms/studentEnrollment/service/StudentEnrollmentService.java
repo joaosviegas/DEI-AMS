@@ -82,7 +82,13 @@ public class StudentEnrollmentService {
         }
 
         StudentEnrollment enrollment = new StudentEnrollment(student, curricularUnit, enrollmentStatus);
-        return new StudentEnrollmentDto(studentEnrollmentRepository.save(enrollment));
+        
+        // Add the enrollment to the curricular unit's collection to maintain bidirectional relationship
+        curricularUnit.addStudentEnrollment(enrollment);
+        
+        StudentEnrollment savedEnrollment = studentEnrollmentRepository.save(enrollment);
+        
+        return new StudentEnrollmentDto(savedEnrollment);
     }
 
     @Transactional
@@ -119,6 +125,10 @@ public class StudentEnrollmentService {
         StudentEnrollment enrollment = studentEnrollmentRepository
                 .findByStudentIdAndCurricularUnitId(studentId, curricularUnitId)
                 .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_STUDENT_ENROLLMENT));
+        
+        // Remove from the curricular unit's collection to maintain bidirectional relationship
+        CurricularUnit curricularUnit = enrollment.getCurricularUnit();
+        curricularUnit.removeStudentEnrollment(enrollment);
         
         studentEnrollmentRepository.delete(enrollment);
     }

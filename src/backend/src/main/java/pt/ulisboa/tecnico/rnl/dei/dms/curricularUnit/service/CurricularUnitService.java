@@ -47,7 +47,7 @@ public class CurricularUnitService {
 
     @Transactional
     public List<CurricularUnitDto> getCurricularUnits() {
-        return curricularUnitRepository.findAll().stream()
+        return curricularUnitRepository.findAllWithStudentEnrollments().stream()
                 .map(CurricularUnitDto::new)
                 .toList();
     }
@@ -87,7 +87,12 @@ public class CurricularUnitService {
 
     @Transactional
     public CurricularUnitDto getCurricularUnit(long id) {
-        return new CurricularUnitDto(fetchCurricularUnitOrThrow(id));
+        CurricularUnit curricularUnit = curricularUnitRepository.findByIdWithStudentEnrollments(id)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_CURRICULAR_UNIT, Long.toString(id)));
+        
+        curricularUnit.getStudentEnrollments().forEach(enrollment -> {});
+        
+        return new CurricularUnitDto(curricularUnit);
     }
 
     @Transactional
@@ -158,24 +163,6 @@ public class CurricularUnitService {
         Person teacher = fetchPersonOrThrow(teacherId);
         
         curricularUnit.removeAssistantTeacher(teacher);
-        return new CurricularUnitDto(curricularUnitRepository.save(curricularUnit));
-    }
-
-    // Student enrollment methods (using enrollment-based approach)
-    // Note: These methods are deprecated. Use StudentEnrollmentService for enrollment management.
-    // They are kept for backward compatibility but delegate to the domain model's enrollment methods.
-    
-    @Transactional
-    @Deprecated
-    public CurricularUnitDto enrollStudentInCurricularUnit(long curricularUnitId, long studentId) {
-        CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
-        Person student = fetchPersonOrThrow(studentId);
-        
-        if (student.getType() != Person.PersonType.STUDENT) {
-            throw new DEIException(ErrorMessage.PERSON_NOT_STUDENT);
-        }
-        
-        curricularUnit.enrollStudent(student, pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment.EnrollmentStatus.ENROLLED);
         return new CurricularUnitDto(curricularUnitRepository.save(curricularUnit));
     }
 

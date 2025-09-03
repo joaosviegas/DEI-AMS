@@ -1,19 +1,20 @@
 package pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 // Domain class representing a student's enrollment in a curricular unit
-@Data
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 @Table(name = "student_enrollments")
 public class StudentEnrollment {
 
@@ -47,10 +48,6 @@ public class StudentEnrollment {
 
 	@Column(name = "completion_date")
 	private LocalDate completionDate;
-
-
-	protected StudentEnrollment() {
-	}
 
 	public StudentEnrollment(Person student, CurricularUnit curricularUnit, EnrollmentStatus status) {
 		this.student = student;
@@ -103,5 +100,18 @@ public class StudentEnrollment {
 		if (newStatus != EnrollmentStatus.ENROLLED && completionDate == null) {
 			this.completionDate = LocalDate.now();
 		}
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		StudentEnrollment that = (StudentEnrollment) o;
+		return Objects.equals(id, that.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
 	}
 }

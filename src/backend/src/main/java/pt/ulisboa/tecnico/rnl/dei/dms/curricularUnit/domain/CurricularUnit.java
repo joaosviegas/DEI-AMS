@@ -1,9 +1,9 @@
 package pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.domain.Course;
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
@@ -11,12 +11,13 @@ import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 // Domain class representing a curricular unit in the system
-@Data
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 @Table(name = "curricular_units")
 public class CurricularUnit {
 
@@ -68,9 +69,6 @@ public class CurricularUnit {
     // StudentEnrollment is now the single source of truth for student relationships
     @OneToMany(mappedBy = "curricularUnit", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<StudentEnrollment> studentEnrollments = new HashSet<>();
-
-    protected CurricularUnit() {
-    }
 
     public CurricularUnit(String code, String name, Semester semester, Integer ects, Person mainTeacher) {
         this.code = code;
@@ -198,5 +196,18 @@ public class CurricularUnit {
                 .filter(enrollment -> enrollment.getStudent().equals(student))
                 .findFirst()
                 .orElse(null);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CurricularUnit that = (CurricularUnit) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

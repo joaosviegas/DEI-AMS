@@ -115,6 +115,52 @@ export default class RemoteServices {
     return httpClient.get(`/curricular-units/${id}`)
   }
 
+  // Test methods
+  static async getTestsByCurricularUnit(curricularUnitId: number): Promise<any[]> {
+    return httpClient.get(`/tests/curricular-unit/${curricularUnitId}`)
+  }
+
+  static async createTest(curricularUnitId: number, test: any): Promise<any> {
+    const params = new URLSearchParams({
+      title: test.title,
+      date: test.date,
+      weight: test.weight.toString()
+    })
+    return httpClient.post(`/tests/curricular-unit/${curricularUnitId}`, null, { params })
+  }
+
+  static async updateTest(testId: number, test: any): Promise<any> {
+    const params = new URLSearchParams({
+      title: test.title,
+      date: test.date,
+      weight: test.weight.toString()
+    })
+    return httpClient.put(`/tests/${testId}`, null, { params })
+  }
+
+  static async deleteTest(testId: number): Promise<void> {
+    return httpClient.delete(`/tests/${testId}`)
+  }
+
+  // Evaluation Grade methods
+  static async getEvaluationGrades(evaluationId: number): Promise<any[]> {
+    return httpClient.get(`/evaluation-grades/evaluation/${evaluationId}`)
+  }
+
+  static async saveEvaluationGrade(evaluationId: number, studentEnrollmentId: number, grade: number): Promise<any> {
+    const params = new URLSearchParams({
+      evaluationId: evaluationId.toString(),
+      studentEnrollmentId: studentEnrollmentId.toString(),
+      grade: grade.toString()
+    })
+    return httpClient.post('/evaluation-grades', null, { params })
+  }
+
+  static async requestGradeRevision(gradeId: number, reason: string): Promise<any> {
+    const params = new URLSearchParams({ reason })
+    return httpClient.put(`/evaluation-grades/${gradeId}/request-revision`, null, { params })
+  }
+
   static async errorMessage(error: any): Promise<string> {
     if (error.message === 'Network Error') {
       return 'Unable to connect to the server'

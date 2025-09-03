@@ -163,7 +163,7 @@ import CurricularUnitDto from '../../models/CurricularUnitDto'
 import PersonDto from '../../models/PersonDto'
 import StudentEnrollmentDto from '../../models/StudentEnrollmentDto'
 import RemoteService from '../../services/RemoteService'
-import ConfirmRemovePersonDialog from '../../components/ConfirmRemovePersonDialog.vue'
+import ConfirmRemovePersonDialog from './ConfirmRemovePersonDialog.vue'
 
 const emit = defineEmits(['people-updated', 'update:modelValue', 'curricular-unit-updated'])
 
@@ -175,6 +175,10 @@ const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
+  },
+  initialTab: {
+    type: Number,
+    default: 0 // 0 for Teachers, 1 for Students
   }
 })
 
@@ -219,8 +223,14 @@ const getStatusText = (status: string) => {
 }
 
 onMounted(async () => {
+  activeTab.value = props.initialTab
   await loadAvailableTeachers()
   await loadAvailableStudents()
+})
+
+// Watch for initialTab changes
+watch(() => props.initialTab, (newTab) => {
+  activeTab.value = newTab
 })
 
 const loadAvailableTeachers = async () => {

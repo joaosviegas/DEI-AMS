@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="localDialog" max-width="1200">
+  <v-dialog v-model="localDialog" max-width="1500">
     <v-card v-if="curricularUnit">
       <v-card-title class="d-flex justify-space-between align-center">
         <span class="text-h5">{{ curricularUnit.name }}</span>
@@ -49,11 +49,23 @@
         <v-tabs v-model="activeTab" class="mt-6">
           <v-tab>Professores</v-tab>
           <v-tab>Alunos</v-tab>
+          <v-tab>Avaliações</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab">
           <!-- Teachers Tab -->
           <v-tabs-window-item>
+            <!-- Add Teachers Button (Only for Main Teachers) -->
+            <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
+              <v-btn 
+                color="primary" 
+                prepend-icon="mdi-account-plus"
+                @click="openAddTeachersDialog"
+              >
+                Adicionar Professores
+              </v-btn>
+            </div>
+
             <v-data-table
               :headers="teacherHeaders"
               :items="allTeachers"
@@ -73,6 +85,17 @@
 
           <!-- Students Tab -->
           <v-tabs-window-item>
+            <!-- Add Students Button (Only for Main Teachers) -->
+            <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
+              <v-btn 
+                color="primary" 
+                prepend-icon="mdi-account-plus"
+                @click="openAddStudentsDialog"
+              >
+                Adicionar Alunos
+              </v-btn>
+            </div>
+
             <v-data-table
               :headers="studentHeaders"
               :items="allStudents"
@@ -89,17 +112,116 @@
               </template>
             </v-data-table>
           </v-tabs-window-item>
+
+          <!-- Evaluations Tab -->
+          <v-tabs-window-item>
+            <!-- Create Test Button (Only for Main Teachers) -->
+            <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
+              <v-btn 
+                color="primary" 
+                prepend-icon="mdi-plus"
+                @click="showCreateTestDialog = true"
+              >
+                Criar Teste
+              </v-btn>
+            </div>
+
+            <v-data-table
+              :headers="evaluationHeaders"
+              :items="allEvaluations"
+              class="mt-4"
+              no-data-text="Sem avaliações a apresentar."
+              :loading="loadingEvaluations"
+            >
+              <template v-slot:[`item.type`]="{ item }">
+                <v-chip 
+                  :color="item.type === 'TEST' ? 'green' : 'blue'" 
+                  size="small"
+                >
+                  {{ item.type === 'TEST' ? 'Teste' : 'Projeto' }}
+                </v-chip>
+              </template>
+              <template v-slot:[`item.date`]="{ item }">
+                {{ formatDate(item.date) }}
+              </template>
+              <template v-slot:[`item.weight`]="{ item }">
+                {{ item.weight*100 }}% <!-- Show weight as percentage -->
+              </template>
+              <template v-slot:[`item.actions`]="{ item }">
+                <v-btn
+                  v-if="canViewEvaluations"
+                  icon="mdi-eye"
+                  variant="text"
+                  size="small"
+                  @click="openEvaluationDetails(item)"
+                  title="Ver Notas"
+                ></v-btn>
+                <v-btn 
+                  v-if="canGradeEvaluations"
+                  icon="mdi-clipboard-edit"
+                  variant="text"
+                  size="small"
+                  @click="openGradesDialog(item)"
+                  title="Atribuir Notas"
+                ></v-btn>
+                <v-btn 
+                  v-if="canManageEvaluations"
+                  icon="mdi-delete"
+                  variant="text"
+                  color="red"
+                  size="small"
+                  @click="confirmDeleteTest(item)"
+                  title="Eliminar"
+                ></v-btn>
+              </template>
+            </v-data-table>
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-card-text>
     </v-card>
   </v-dialog>
+
+  <!-- AddPeople Dialog -->
+  <AddPeopleDialog 
+    v-model="showAddPeopleDialog"
+    :curricular-unit="props.curricularUnit"
+    :initial-tab="addPeopleInitialTab"
+    @people-updated="handlePeopleUpdated"
+    @curricular-unit-updated="handleCurricularUnitUpdated"
+  />
+
+  <!-- Create Test Dialog -->
+  <CreateTestDialog
+    v-model="showCreateTestDialog"
+    :curricular-unit-id="curricularUnit?.id || 0"
+    @test-created="loadEvaluations"
+  />
+  
+  <!-- Evaluation Details Dialog -->
+  <EvaluationDetailsDialog
+    v-model="showEvaluationDetailsDialog"
+    :evaluation="selectedEvaluation"
+  />
+  
+  <!-- Grades Dialog (for students) -->
+  <GradesDialog
+    v-model="showGradesDialog"
+    :evaluation="selectedEvaluation"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
+import TestDto from '../../models/TestDto'
+import RemoteService from '../../services/RemoteService'
+import { useRoleStore } from '../../stores/role'
+import AddPeopleDialog from './AddPeopleDialog.vue'
+import CreateTestDialog from './evaluations/CreateTestDialog.vue'
+import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
+import GradesDialog from './evaluations/GradesDialog.vue'
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'curricular-unit-updated'])
 
 const props = defineProps({
   curricularUnit: {
@@ -112,7 +234,20 @@ const props = defineProps({
   }
 })
 
+const showAddPeopleDialog = ref(false)
+const addPeopleInitialTab = ref(0) // 0 for Teachers, 1 for Students
+const selectedCurricularUnit = ref<CurricularUnitDto>()
+
 const activeTab = ref(0)
+const roleStore = useRoleStore()
+
+// Evaluations data
+const allEvaluations = ref<TestDto[]>([])
+const loadingEvaluations = ref(false)
+const showCreateTestDialog = ref(false)
+const showEvaluationDetailsDialog = ref(false)
+const showGradesDialog = ref(false)
+const selectedEvaluation = ref<TestDto | undefined>()
 
 const localDialog = computed({
   get: () => props.modelValue,
@@ -131,6 +266,14 @@ const studentHeaders = [
   { title: 'IST ID', key: 'istId', value: 'istId' },
   { title: 'Email', key: 'email', value: 'email' },
   { title: 'Estado', key: 'status', value: 'status' }
+]
+
+const evaluationHeaders = [
+  { title: 'Título', key: 'title', value: 'title' },
+  { title: 'Tipo', key: 'type', value: 'type' },
+  { title: 'Data', key: 'date', value: 'date' },
+  { title: 'Peso', key: 'weight', value: 'weight' },
+  { title: 'Ações', key: 'actions', value: 'actions', sortable: false }
 ]
 
 const allTeachers = computed(() => {
@@ -153,6 +296,19 @@ const allTeachers = computed(() => {
   })
   
   return teachers
+})
+
+// Permission-based computed properties
+const canManageEvaluations = computed(() => {
+  return roleStore.isMainTeacher
+})
+
+const canGradeEvaluations = computed(() => {
+  return roleStore.isMainTeacher || roleStore.isTeachingAssistant
+})
+
+const canViewEvaluations = computed(() => {
+  return canManageEvaluations.value || canGradeEvaluations.value || roleStore.isStudent
 })
 
 const allStudents = computed(() => {
@@ -193,4 +349,73 @@ const getSemesterText = (semester: string) => {
   }
   return semesterMap[semester] || semester
 }
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('pt-PT')
+}
+
+// Evaluation management functions
+const loadEvaluations = async () => {
+  if (!props.curricularUnit?.id) return
+  
+  loadingEvaluations.value = true
+  try {
+    const evaluations = await RemoteService.getTestsByCurricularUnit(props.curricularUnit.id)
+    allEvaluations.value = evaluations.map(TestDto.fromBackend)
+  } catch (error) {
+    console.error('Error loading evaluations:', error)
+  } finally {
+    loadingEvaluations.value = false
+  }
+}
+
+const openGradesDialog = (evaluation: TestDto) => {
+  selectedEvaluation.value = evaluation
+  if (roleStore.isStudent) {
+    showGradesDialog.value = true
+  } else {
+    showEvaluationDetailsDialog.value = true
+  }
+}
+
+const openEvaluationDetails = (evaluation: TestDto) => {
+  selectedEvaluation.value = evaluation
+  showEvaluationDetailsDialog.value = true
+}
+
+const confirmDeleteTest = (evaluation: TestDto) => {
+  // TODO: Implement delete confirmation
+  console.log('Confirming delete for:', evaluation)
+}
+
+// Methods for opening AddPeopleDialog with correct tab
+const openAddTeachersDialog = () => {
+  addPeopleInitialTab.value = 0 // Teachers tab
+  showAddPeopleDialog.value = true
+}
+
+const openAddStudentsDialog = () => {
+  addPeopleInitialTab.value = 1 // Students tab
+  showAddPeopleDialog.value = true
+}
+
+// Event handlers for AddPeopleDialog
+const handlePeopleUpdated = () => {
+  // This would typically refresh the curricular unit data
+  // For now, we'll emit to the parent to handle the refresh
+  emit('curricular-unit-updated')
+}
+
+const handleCurricularUnitUpdated = (updatedCU: CurricularUnitDto) => {
+  // Update local data if needed
+  selectedCurricularUnit.value = updatedCU
+  emit('curricular-unit-updated', updatedCU)
+}
+
+// Watch for curricular unit changes to load evaluations
+watch(() => props.curricularUnit, async () => {
+  if (props.curricularUnit) {
+    await loadEvaluations()
+  }
+}, { immediate: true })
 </script>

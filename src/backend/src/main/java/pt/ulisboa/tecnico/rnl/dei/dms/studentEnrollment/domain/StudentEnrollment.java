@@ -20,7 +20,7 @@ public class StudentEnrollment {
 	public enum EnrollmentStatus {
 		ENROLLED,
 		APPROVED,
-		FAILED
+		FAILED,
 	}
 
 	@Id
@@ -45,6 +45,10 @@ public class StudentEnrollment {
 	@Column(name = "final_grade")
 	private Double finalGrade; // calculated from evaluations
 
+	@Column(name = "completion_date")
+	private LocalDate completionDate;
+
+
 	protected StudentEnrollment() {
 	}
 
@@ -57,5 +61,47 @@ public class StudentEnrollment {
 
 	public StudentEnrollment(Person student, CurricularUnit curricularUnit) {
 		this(student, curricularUnit, EnrollmentStatus.ENROLLED);
+	}
+
+	/**
+	 * Checks if the enrollment is active (student can attend classes)
+	 */
+	public boolean isActive() {
+		return status == EnrollmentStatus.ENROLLED;
+	}
+
+	/**
+	 * Checks if the enrollment is completed (either passed or failed)
+	 */
+	public boolean isCompleted() {
+		return status == EnrollmentStatus.APPROVED || status == EnrollmentStatus.FAILED;
+	}
+
+	/**
+	 * Completes the enrollment with a final grade
+	 */
+	public void complete(Double grade) {
+		if (!isActive()) {
+			throw new IllegalStateException("Cannot complete a non-active enrollment");
+		}
+		
+		this.finalGrade = grade;
+		this.completionDate = LocalDate.now();
+		this.status = (grade >= 10.0) ? EnrollmentStatus.APPROVED : EnrollmentStatus.FAILED;
+	}
+
+	/**
+	 * Updates the enrollment status with business validation
+	 */
+	public void updateStatus(EnrollmentStatus newStatus) {
+		// Business rules for status transitions
+		
+		if (isCompleted() && newStatus == EnrollmentStatus.ENROLLED) {
+			throw new IllegalStateException("Cannot re-enroll completed enrollment");
+		}
+		
+		if (newStatus != EnrollmentStatus.ENROLLED && completionDate == null) {
+			this.completionDate = LocalDate.now();
+		}
 	}
 }

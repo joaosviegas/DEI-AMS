@@ -86,7 +86,7 @@ public class StudentEnrollmentService {
     }
 
     @Transactional
-    public StudentEnrollmentDto updateEnrollmentStatus(long enrollmentId, String status) {
+    public StudentEnrollmentDto updateEnrollmentStatus(long enrollmentId, String status, String reason) {
         StudentEnrollment enrollment = fetchStudentEnrollmentOrThrow(enrollmentId);
 
         StudentEnrollment.EnrollmentStatus enrollmentStatus;
@@ -96,7 +96,15 @@ public class StudentEnrollmentService {
             throw new DEIException(ErrorMessage.ENROLLMENT_STATUS_NOT_VALID);
         }
 
-        enrollment.setStatus(enrollmentStatus);
+        enrollment.updateStatus(enrollmentStatus);
+        return new StudentEnrollmentDto(studentEnrollmentRepository.save(enrollment));
+    }
+
+    @Transactional
+    public StudentEnrollmentDto completeEnrollment(long enrollmentId, Double grade) {
+        StudentEnrollment enrollment = fetchStudentEnrollmentOrThrow(enrollmentId);
+        
+        enrollment.complete(grade);
         return new StudentEnrollmentDto(studentEnrollmentRepository.save(enrollment));
     }
 

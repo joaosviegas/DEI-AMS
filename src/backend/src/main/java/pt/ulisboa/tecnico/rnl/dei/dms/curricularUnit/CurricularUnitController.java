@@ -86,21 +86,6 @@ public class CurricularUnitController {
         return curricularUnitService.removeAssistantTeacher(id, teacherId);
     }
 
-    // Student management endpoints
-    @PostMapping("/curricular-units/{id}/students/{studentId}")
-    public CurricularUnitDto addStudent(
-            @PathVariable long id, 
-            @PathVariable long studentId) {
-        return curricularUnitService.addStudent(id, studentId);
-    }
-
-    @DeleteMapping("/curricular-units/{id}/students/{studentId}")
-    public CurricularUnitDto removeStudent(
-            @PathVariable long id, 
-            @PathVariable long studentId) {
-        return curricularUnitService.removeStudent(id, studentId);
-    }
-
     // Permission checking endpoints
     @GetMapping("/curricular-units/{id}/can-manage")
     public boolean canManageCurricularUnit(

@@ -18,8 +18,8 @@ public record CurricularUnitDto(
     PersonDto mainTeacher,
     Set<CourseDto> courses,
     Set<PersonDto> assistantTeachers,
-    Set<PersonDto> students, // Keep this for backward compatibility
-    Set<StudentEnrollmentDto> studentEnrollments // New field for enrollment data
+    Set<PersonDto> students, 
+    Set<StudentEnrollmentDto> studentEnrollments 
 ) {
     public CurricularUnitDto(CurricularUnit curricularUnit) {
         this(
@@ -35,7 +35,7 @@ public record CurricularUnitDto(
             curricularUnit.getAssistantTeachers().stream()
                 .map(PersonDto::new)
                 .collect(Collectors.toSet()),
-            curricularUnit.getStudents().stream()
+            curricularUnit.getAllStudents().stream()
                 .map(PersonDto::new)
                 .collect(Collectors.toSet()),
             curricularUnit.getStudentEnrollments().stream()

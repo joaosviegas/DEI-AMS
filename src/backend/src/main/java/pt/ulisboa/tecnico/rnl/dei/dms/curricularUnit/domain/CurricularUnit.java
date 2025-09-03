@@ -10,6 +10,7 @@ import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 // Domain class representing a curricular unit in the system
 @Data
@@ -21,8 +22,7 @@ public class CurricularUnit {
 
     public enum Semester {
         FIRST,
-        SECOND,
-        ANNUAL
+        SECOND
     }
 
     @Id
@@ -65,16 +65,8 @@ public class CurricularUnit {
     )
     private Set<Person> assistantTeachers = new HashSet<>();
 
-    // Many-to-many relationship with students
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "curricular_unit_students",
-        joinColumns = @JoinColumn(name = "curricular_unit_id"),
-        inverseJoinColumns = @JoinColumn(name = "person_id")
-    )
-    private Set<Person> students = new HashSet<>();
-
-    @OneToMany(mappedBy = "curricularUnit")
+    // StudentEnrollment is now the single source of truth for student relationships
+    @OneToMany(mappedBy = "curricularUnit", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<StudentEnrollment> studentEnrollments = new HashSet<>();
 
     protected CurricularUnit() {
@@ -107,15 +99,61 @@ public class CurricularUnit {
     public void removeAssistantTeacher(Person teacher) {
         this.assistantTeachers.remove(teacher);
     }
-
-    public void addStudent(Person student) {
-        if (student.getType() == Person.PersonType.STUDENT) {
-            this.students.add(student);
-        }
+    
+    /**
+     * Gets all currently enrolled students (active enrollments only)
+     */
+    public Set<Person> getEnrolledStudents() {
+        return studentEnrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == StudentEnrollment.EnrollmentStatus.ENROLLED)
+                .map(StudentEnrollment::getStudent)
+                .collect(Collectors.toSet());
     }
 
-    public void removeStudent(Person student) {
-        this.students.remove(student);
+    /**
+     * Gets all students who have successfully completed the curricular unit
+     */
+    public Set<Person> getPassedStudents() {
+        return studentEnrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == StudentEnrollment.EnrollmentStatus.APPROVED)
+                .map(StudentEnrollment::getStudent)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Gets all students who have failed the curricular unit
+     */
+    public Set<Person> getFailedStudents() {
+        return studentEnrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == StudentEnrollment.EnrollmentStatus.FAILED)
+                .map(StudentEnrollment::getStudent)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Gets all students regardless of enrollment status (for backward compatibility)
+     */
+    public Set<Person> getAllStudents() {
+        return studentEnrollments.stream()
+                .map(StudentEnrollment::getStudent)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Enrolls a student in this curricular unit
+     */
+    public StudentEnrollment enrollStudent(Person student, StudentEnrollment.EnrollmentStatus status) {
+        if (student.getType() != Person.PersonType.STUDENT) {
+            throw new IllegalArgumentException("Person is not a student");
+        }
+        
+        if (isStudentEnrolled(student)) {
+            throw new IllegalStateException("Student is already enrolled");
+        }
+        
+        StudentEnrollment enrollment = new StudentEnrollment(student, this, status);
+        this.addStudentEnrollment(enrollment);
+        return enrollment;
     }
 
     // Business logic methods
@@ -135,7 +173,7 @@ public class CurricularUnit {
         return isMainTeacher(person);
     }
 
-    public boolean hasPermissionToAssess(Person person) {
+    public boolean hasPermissionToEvaluate(Person person) {
         return isMainTeacher(person) || isAssistantTeacher(person);
     }
 

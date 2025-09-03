@@ -30,30 +30,38 @@ public class StudentEnrollmentController {
         return studentEnrollmentService.getStudentEnrollmentsByStudent(studentId);
     }
 
-    @PostMapping("/curricular-units/{curricularUnitId}/students/{studentId}")
+    @PostMapping("/student-enrollments")
     public StudentEnrollmentDto enrollStudent(
-            @PathVariable long curricularUnitId,
-            @PathVariable long studentId,
+            @RequestParam long curricularUnitId,
+            @RequestParam long studentId,
             @RequestParam(defaultValue = "ENROLLED") String status) {
         return studentEnrollmentService.enrollStudent(studentId, curricularUnitId, status);
     }
 
-    @PutMapping("/enrollments/{enrollmentId}")
+    @PutMapping("/student-enrollments/{enrollmentId}/status")
     public StudentEnrollmentDto updateEnrollmentStatus(
             @PathVariable long enrollmentId,
-            @RequestParam String status) {
-        return studentEnrollmentService.updateEnrollmentStatus(enrollmentId, status);
+            @RequestParam String status,
+            @RequestParam(required = false) String reason) {
+        return studentEnrollmentService.updateEnrollmentStatus(enrollmentId, status, reason);
     }
 
-    @DeleteMapping("/enrollments/{enrollmentId}")
+    @PutMapping("/student-enrollments/{enrollmentId}/complete")
+    public StudentEnrollmentDto completeEnrollment(
+            @PathVariable long enrollmentId,
+            @RequestParam Double grade) {
+        return studentEnrollmentService.completeEnrollment(enrollmentId, grade);
+    }
+
+    @DeleteMapping("/student-enrollments/{enrollmentId}")
     public void deleteEnrollment(@PathVariable long enrollmentId) {
         studentEnrollmentService.deleteEnrollment(enrollmentId);
     }
 
-    @DeleteMapping("/curricular-units/{curricularUnitId}/students/{studentId}")
+    @DeleteMapping("/student-enrollments")
     public void unenrollStudent(
-            @PathVariable long curricularUnitId,
-            @PathVariable long studentId) {
+            @RequestParam long curricularUnitId,
+            @RequestParam long studentId) {
         studentEnrollmentService.unenrollStudent(studentId, curricularUnitId);
     }
 }

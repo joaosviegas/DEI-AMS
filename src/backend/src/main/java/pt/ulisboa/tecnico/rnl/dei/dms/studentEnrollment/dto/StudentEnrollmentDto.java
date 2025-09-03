@@ -10,6 +10,7 @@ public record StudentEnrollmentDto(
     PersonDto student,
     String status,
     LocalDate enrollmentDate,
+    LocalDate completionDate,
     Double finalGrade
 ) {
     public StudentEnrollmentDto(StudentEnrollment enrollment) {
@@ -18,6 +19,7 @@ public record StudentEnrollmentDto(
             new PersonDto(enrollment.getStudent()),
             enrollment.getStatus().toString(),
             enrollment.getEnrollmentDate(),
+            enrollment.getCompletionDate(),
             enrollment.getFinalGrade()
         );
     }

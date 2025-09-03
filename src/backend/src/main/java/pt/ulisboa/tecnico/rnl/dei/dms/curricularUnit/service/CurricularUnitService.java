@@ -161,22 +161,21 @@ public class CurricularUnitService {
         return new CurricularUnitDto(curricularUnitRepository.save(curricularUnit));
     }
 
-    // Student management methods
+    // Student enrollment methods (using enrollment-based approach)
+    // Note: These methods are deprecated. Use StudentEnrollmentService for enrollment management.
+    // They are kept for backward compatibility but delegate to the domain model's enrollment methods.
+    
     @Transactional
-    public CurricularUnitDto addStudent(long curricularUnitId, long studentId) {
+    @Deprecated
+    public CurricularUnitDto enrollStudentInCurricularUnit(long curricularUnitId, long studentId) {
         CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
         Person student = fetchPersonOrThrow(studentId);
         
-        curricularUnit.addStudent(student);
-        return new CurricularUnitDto(curricularUnitRepository.save(curricularUnit));
-    }
-
-    @Transactional
-    public CurricularUnitDto removeStudent(long curricularUnitId, long studentId) {
-        CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
-        Person student = fetchPersonOrThrow(studentId);
+        if (student.getType() != Person.PersonType.STUDENT) {
+            throw new DEIException(ErrorMessage.PERSON_NOT_STUDENT);
+        }
         
-        curricularUnit.removeStudent(student);
+        curricularUnit.enrollStudent(student, pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment.EnrollmentStatus.ENROLLED);
         return new CurricularUnitDto(curricularUnitRepository.save(curricularUnit));
     }
 
@@ -194,6 +193,6 @@ public class CurricularUnitService {
         CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
         Person person = fetchPersonOrThrow(personId);
         
-        return curricularUnit.hasPermissionToAssess(person);
+        return curricularUnit.hasPermissionToEvaluate(person);
     }
 }

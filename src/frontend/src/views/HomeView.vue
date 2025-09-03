@@ -29,26 +29,20 @@
     </v-row>
 
     <v-row>
-      <v-col v-for="(feature, i) in features" :key="i" cols="12" sm="6" md="4">
-        <v-card height="100%">
+      <v-col v-for="(feature, i) in features" :key="i" cols="12" sm="6" md="3">
+        <v-card 
+          height="100%" 
+          class="feature-card"
+          @click="handleFeatureClick(feature)"
+          style="cursor: pointer"
+        >
           <v-card-title class="d-flex align-center">
-            <v-icon :icon="feature.icon" class="mr-2" :color="roleColor"></v-icon>
+            <v-icon :icon="feature.icon" class="mr-2" :color="(feature as any).color || roleColor"></v-icon>
             {{ feature.title }}
           </v-card-title>
           <v-card-text>
             {{ feature.description }}
           </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              :to="feature.route"
-              :color="roleColor"
-              variant="tonal"
-              size="small"
-            >
-              Acessar
-            </v-btn>
-          </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
@@ -57,8 +51,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useRoleStore } from '../stores/role';
 
+const router = useRouter();
 const roleStore = useRoleStore();
 const currentRole = computed(() => roleStore.currentActiveRole);
 
@@ -68,7 +64,7 @@ const roleName = computed(() => {
     case 'MAIN_TEACHER': return 'Professor Regente';
     case 'TEACHING_ASSISTANT': return 'Professor Assistente';
     case 'STUDENT': return 'Aluno';
-    default: return 'Usuário';
+    default: return 'Selecionar Papel';
   }
 });
 
@@ -88,7 +84,7 @@ const roleIcon = computed(() => {
     case 'MAIN_TEACHER': return 'mdi-account-tie';
     case 'TEACHING_ASSISTANT': return 'mdi-account-school';
     case 'STUDENT': return 'mdi-school';
-    default: return 'mdi-account';
+    default: return 'mdi-account-question';
   }
 });
 
@@ -103,11 +99,49 @@ const roleDescription = computed(() => {
     case 'STUDENT':
       return 'Como Aluno, você pode visualizar as suas unidades curriculares, professores e colegas de turma.';
     default:
-      return 'Selecione um role para visualizar as funcionalidades.';
+      return 'Selecione um papel abaixo para acessar as funcionalidades do sistema.';
   }
 });
 
 const features = computed(() => {
+  // If no role is selected, show role selection options
+  if (!currentRole.value || currentRole.value === '') {
+    return [
+      {
+        title: 'Aluno',
+        description: 'Visualizar as suas unidades curriculares, professores e colegas de turma.',
+        icon: 'mdi-school',
+        color: 'green',
+        role: 'STUDENT',
+        isRoleSelection: true
+      },
+      {
+        title: 'Professor Assistente',
+        description: 'Visualizar as unidades curriculares onde está envolvido e consultar informações dos alunos.',
+        icon: 'mdi-account-school',
+        color: 'blue',
+        role: 'TEACHING_ASSISTANT',
+        isRoleSelection: true
+      },
+      {
+        title: 'Professor Regente',
+        description: 'Gerir as suas unidades curriculares, adicionar professores assistentes e alunos.',
+        icon: 'mdi-account-tie',
+        color: 'red',
+        role: 'MAIN_TEACHER',
+        isRoleSelection: true
+      },
+      {
+        title: 'Administrador',
+        description: 'Acesso completo ao sistema para gerir pessoas, cursos, unidades curriculares e estatísticas.',
+        icon: 'mdi-shield-account',
+        color: 'purple',
+        role: 'ADMINISTRATOR',
+        isRoleSelection: true
+      }
+    ];
+  }
+
   switch(currentRole.value) {
     case 'ADMINISTRATOR':
       return [
@@ -209,4 +243,29 @@ const features = computed(() => {
       return [];
   }
 });
+
+const handleFeatureClick = (feature: any) => {
+  if (feature.isRoleSelection) {
+    // Switch to the selected perspective/role
+    roleStore.switchPerspective(feature.role);
+  } else if (feature.route) {
+    // Navigate to the route
+    router.push(feature.route);
+  }
+};
 </script>
+
+<style scoped>
+.feature-card {
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.feature-card:active {
+  transform: translateY(-2px);
+}
+</style>

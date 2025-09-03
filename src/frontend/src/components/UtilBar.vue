@@ -24,7 +24,7 @@
       <v-btn size="small" @click="changeRole('ADMINISTRATOR')">Administrador</v-btn>
     </v-toolbar-items>
     <v-toolbar-items class="ms-2">
-      <v-btn size="small" variant="text">
+      <v-btn size="small" variant="text" @click="changeRole(null)">
         Terminar sessão
         <v-icon size="small" class="ms-1" icon="mdi-logout"></v-icon>
       </v-btn>
@@ -35,13 +35,21 @@
 <script setup lang="ts">
 import DarkModeSwitch from './DarkModeSwitch.vue'
 import { useRoleStore } from '@/stores/role'
+import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { watch } from 'vue'
 
 const roleStore = useRoleStore()
+const router = useRouter()
 
-const changeRole = (role: string) => {
-  roleStore.currentRole = role
+const changeRole = (role: string | null) => {
+  if (role === null) {
+    // Handle logout/reset - switch to no role selected and go to home
+    roleStore.switchPerspective('')
+    router.push('/')
+  } else {
+    roleStore.switchPerspective(role)
+  }
 }
 
 const currentRole = ref(roleStore.currentRole)

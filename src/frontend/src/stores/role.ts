@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useRoleStore = defineStore('role', {
   state: () => ({
-    currentRole: 'ADMINISTRATOR',
+    currentRole: '',
   }),
   getters: {
     isAdministrator(): boolean {
@@ -19,6 +19,11 @@ export const useRoleStore = defineStore('role', {
     },
     currentActiveRole(): string {
         return this.currentRole
+    }
+  },
+  actions: {
+    switchPerspective(role: string) {
+      this.currentRole = role
     }
   },
   persist: true

@@ -118,8 +118,7 @@ const courseOptions = ref<{ text: string, value: number }[]>([])
 
 const semesterOptions = [
   { title: '1º Semestre', value: 'FIRST' },
-  { title: '2º Semestre', value: 'SECOND' },
-  { title: 'Anual', value: 'ANNUAL' }
+  { title: '2º Semestre', value: 'SECOND' }
 ]
 
 // Validation rules

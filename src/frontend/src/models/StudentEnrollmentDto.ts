@@ -5,6 +5,7 @@ export default class StudentEnrollmentDto {
   student?: PersonDto
   status?: string // "ENROLLED", "APPROVED", "FAILED"
   enrollmentDate?: string
+  completionDate?: string
   finalGrade?: number
 
   constructor(obj?: Partial<StudentEnrollmentDto>) {

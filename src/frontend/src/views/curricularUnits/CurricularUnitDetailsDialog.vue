@@ -160,8 +160,7 @@ const allStudents = computed(() => {
 const getSemesterText = (semester: string) => {
   const semesterMap: { [key: string]: string } = {
     'FIRST': '1º Semestre',
-    'SECOND': '2º Semestre',
-    'ANNUAL': 'Anual'
+    'SECOND': '2º Semestre'
   }
   return semesterMap[semester] || semester
 }

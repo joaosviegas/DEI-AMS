@@ -130,8 +130,7 @@ const editCurricularUnit = ref<any>({
 // Options for selects
 const semesterOptions = [
   { text: '1º Semestre', value: 'FIRST' },
-  { text: '2º Semestre', value: 'SECOND' },
-  { text: 'Anual', value: 'ANNUAL' }
+  { text: '2º Semestre', value: 'SECOND' }
 ]
 
 const teacherOptions = ref<{ text: string, value: number }[]>([])

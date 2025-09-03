@@ -12,6 +12,8 @@ public interface StudentEnrollmentRepository extends JpaRepository<StudentEnroll
     
     List<StudentEnrollment> findByCurricularUnitId(Long curricularUnitId);
     
+    List<StudentEnrollment> findByCurricularUnitIdAndStatus(Long curricularUnitId, StudentEnrollment.EnrollmentStatus status);
+    
     List<StudentEnrollment> findByStudentId(Long studentId);
     
     Optional<StudentEnrollment> findByStudentIdAndCurricularUnitId(Long studentId, Long curricularUnitId);

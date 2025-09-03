@@ -30,7 +30,18 @@ public enum ErrorMessage {
 	NO_SUCH_STUDENT_ENROLLMENT("Não existe nenhuma inscrição com o ID %s", 4001),
 	PERSON_NOT_STUDENT("A pessoa especificada não é um aluno.", 4002),
 	STUDENT_ALREADY_ENROLLED("O aluno já está inscrito nesta unidade curricular.", 4003),
-	ENROLLMENT_STATUS_NOT_VALID("O estado da inscrição especificado não é válido.", 4004);
+	ENROLLMENT_STATUS_NOT_VALID("O estado da inscrição especificado não é válido.", 4004),
+
+	// Test errors
+	NO_SUCH_TEST("Não existe nenhum teste com o ID %s", 5001),
+	TEST_TITLE_NOT_VALID("O título do teste especificado não é válido.", 5002),
+	TEST_DATE_NOT_VALID("A data do teste especificada não é válida.", 5003),
+	TEST_WEIGHT_NOT_VALID("O peso do teste especificado não é válido.", 5004),
+	EVALUATION_WEIGHT_EXCEEDS_LIMIT("O peso total das avaliações não pode exceder 1.0 (100%).", 5005),
+
+	// EvaluationGrade errors
+	NO_SUCH_EVALUATION_GRADE("Não existe nenhuma nota com o ID %s", 6001),
+	GRADE_NOT_VALID("A nota especificada deve estar entre 0.0 e 20.0.", 6002);
 
 	private final String label;
 	private final int code;

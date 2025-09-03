@@ -70,6 +70,10 @@ public class CurricularUnit {
     @OneToMany(mappedBy = "curricularUnit", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<StudentEnrollment> studentEnrollments = new HashSet<>();
 
+    // One-to-many relationship with evaluations (tests and projects)
+    @OneToMany(mappedBy = "curricularUnit", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Evaluation> evaluations = new HashSet<>();
+
     public CurricularUnit(String code, String name, Semester semester, Integer ects, Person mainTeacher) {
         this.code = code;
         this.name = name;
@@ -196,6 +200,21 @@ public class CurricularUnit {
                 .filter(enrollment -> enrollment.getStudent().equals(student))
                 .findFirst()
                 .orElse(null);
+    }
+
+    // Evaluation management methods
+    public Set<pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Evaluation> getEvaluations() {
+        return evaluations;
+    }
+
+    public void addEvaluation(pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Evaluation evaluation) {
+        evaluations.add(evaluation);
+        evaluation.setCurricularUnit(this);
+    }
+
+    public void removeEvaluation(pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Evaluation evaluation) {
+        evaluations.remove(evaluation);
+        evaluation.setCurricularUnit(null);
     }
 
     @Override

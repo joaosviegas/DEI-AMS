@@ -59,7 +59,7 @@
         class="mr-2" 
         tonal
       >
-        mdi-account-plus
+        mdi-account-edit
       </v-icon>
       
       <!-- Edit and Delete - admin only -->

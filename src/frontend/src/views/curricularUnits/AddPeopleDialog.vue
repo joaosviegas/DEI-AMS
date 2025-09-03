@@ -61,7 +61,7 @@
                     icon="mdi-delete" 
                     variant="text" 
                     color="red"
-                    @click="removeAssistantTeacher(teacher.id!)"
+                    @click="confirmRemoveTeacher(teacher.id!, teacher.name!)"
                   ></v-btn>
                 </template>
               </v-list-item>
@@ -105,7 +105,7 @@
                 :key="enrollment.id"
               >
                 <template v-slot:prepend>
-                  <v-avatar :color="getStatusColor(enrollment.status)">
+                  <v-avatar color="green">
                     <v-icon>mdi-account-school</v-icon>
                   </v-avatar>
                 </template>
@@ -113,7 +113,7 @@
                 <v-list-item-subtitle>
                   {{ enrollment.student?.istId }} - {{ enrollment.student?.email }}
                   <v-chip size="small" :color="getStatusColor(enrollment.status)" class="ml-2">
-                    {{ enrollment.status }}
+                    {{ getStatusText(enrollment.status) }}
                   </v-chip>
                 </v-list-item-subtitle>
                 <template v-slot:append>
@@ -121,7 +121,7 @@
                     icon="mdi-delete" 
                     variant="text" 
                     color="red"
-                    @click="removeStudent(enrollment.student?.id!)"
+                    @click="confirmRemoveStudent(enrollment.student?.id!, enrollment.student?.name!)"
                   ></v-btn>
                 </template>
               </v-list-item>
@@ -139,6 +139,22 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Remove Student Confirmation Dialog -->
+  <ConfirmRemovePersonDialog
+    v-model="showRemoveStudentDialog"
+    person-type="student"
+    :person-name="studentToRemove?.name || ''"
+    @confirm="confirmRemoveStudentAction"
+  />
+
+  <!-- Remove Teacher Confirmation Dialog -->
+  <ConfirmRemovePersonDialog
+    v-model="showRemoveTeacherDialog"
+    person-type="teacher"
+    :person-name="teacherToRemove?.name || ''"
+    @confirm="confirmRemoveTeacherAction"
+  />
 </template>
 
 <script setup lang="ts">
@@ -147,6 +163,7 @@ import CurricularUnitDto from '../../models/CurricularUnitDto'
 import PersonDto from '../../models/PersonDto'
 import StudentEnrollmentDto from '../../models/StudentEnrollmentDto'
 import RemoteService from '../../services/RemoteService'
+import ConfirmRemovePersonDialog from '../../components/ConfirmRemovePersonDialog.vue'
 
 const emit = defineEmits(['people-updated', 'update:modelValue', 'curricular-unit-updated'])
 
@@ -167,6 +184,12 @@ const loadingStudents = ref(false)
 const selectedTeacher = ref<number | null>(null)
 const selectedStudent = ref<number | null>(null)
 
+// Confirmation dialog state
+const showRemoveStudentDialog = ref(false)
+const studentToRemove = ref<{ id: number, name: string } | null>(null)
+const showRemoveTeacherDialog = ref(false)
+const teacherToRemove = ref<{ id: number, name: string } | null>(null)
+
 const localDialog = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
@@ -182,6 +205,16 @@ const getStatusColor = (status: string) => {
     case 'APPROVED': return 'green'
     case 'FAILED': return 'red'
     default: return 'grey'
+  }
+}
+
+// Helper function for status display text
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'ENROLLED': return 'Inscrito';
+    case 'APPROVED': return 'Aprovado';
+    case 'FAILED': return 'Reprovado';
+    default: return 'Desconhecido';
   }
 }
 
@@ -321,6 +354,30 @@ const addStudent = async () => {
   } catch (error) {
     console.error('Error adding student:', error)
   }
+}
+
+const confirmRemoveStudent = (studentId: number, studentName: string) => {
+  studentToRemove.value = { id: studentId, name: studentName }
+  showRemoveStudentDialog.value = true
+}
+
+const confirmRemoveStudentAction = async () => {
+  if (!studentToRemove.value) return
+  
+  await removeStudent(studentToRemove.value.id)
+  studentToRemove.value = null
+}
+
+const confirmRemoveTeacher = (teacherId: number, teacherName: string) => {
+  teacherToRemove.value = { id: teacherId, name: teacherName }
+  showRemoveTeacherDialog.value = true
+}
+
+const confirmRemoveTeacherAction = async () => {
+  if (!teacherToRemove.value) return
+  
+  await removeAssistantTeacher(teacherToRemove.value.id)
+  teacherToRemove.value = null
 }
 
 const removeStudent = async (studentId: number) => {

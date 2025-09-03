@@ -18,7 +18,6 @@ public record CurricularUnitDto(
     PersonDto mainTeacher,
     Set<CourseDto> courses,
     Set<PersonDto> assistantTeachers,
-    Set<PersonDto> students, 
     Set<StudentEnrollmentDto> studentEnrollments 
 ) {
     public CurricularUnitDto(CurricularUnit curricularUnit) {
@@ -33,9 +32,6 @@ public record CurricularUnitDto(
                 .map(CourseDto::new)
                 .collect(Collectors.toSet()),
             curricularUnit.getAssistantTeachers().stream()
-                .map(PersonDto::new)
-                .collect(Collectors.toSet()),
-            curricularUnit.getAllStudents().stream()
                 .map(PersonDto::new)
                 .collect(Collectors.toSet()),
             curricularUnit.getStudentEnrollments().stream()

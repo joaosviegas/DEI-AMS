@@ -4,6 +4,8 @@ import java.util.Optional;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ public interface CurricularUnitRepository extends JpaRepository<CurricularUnit, 
     // Find CUs where a person is an assistant teacher
     List<CurricularUnit> findByAssistantTeachersContaining(Person person);
     
-    // Find CUs where a person is a student
-    List<CurricularUnit> findByStudentsContaining(Person person);
+    // Find CUs where a person is enrolled as a student (through StudentEnrollment)
+    @Query("SELECT DISTINCT cu FROM CurricularUnit cu JOIN cu.studentEnrollments se WHERE se.student = :student")
+    List<CurricularUnit> findByStudentEnrollments_Student(@Param("student") Person student);
 }

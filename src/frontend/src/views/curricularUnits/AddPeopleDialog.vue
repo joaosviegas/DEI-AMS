@@ -99,24 +99,29 @@
             <!-- Current Students -->
             <v-divider class="my-4"></v-divider>
             <h4 class="mb-2">Alunos Atuais</h4>
-            <v-list v-if="curricularUnit?.students.length">
+            <v-list v-if="curricularUnit?.studentEnrollments?.length">
               <v-list-item 
-                v-for="student in curricularUnit.students" 
-                :key="student.id"
+                v-for="enrollment in curricularUnit.studentEnrollments" 
+                :key="enrollment.id"
               >
                 <template v-slot:prepend>
-                  <v-avatar color="green">
+                  <v-avatar :color="getStatusColor(enrollment.status)">
                     <v-icon>mdi-account-school</v-icon>
                   </v-avatar>
                 </template>
-                <v-list-item-title>{{ student.name }}</v-list-item-title>
-                <v-list-item-subtitle>{{ student.istId }} - {{ student.email }}</v-list-item-subtitle>
+                <v-list-item-title>{{ enrollment.student?.name }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ enrollment.student?.istId }} - {{ enrollment.student?.email }}
+                  <v-chip size="small" :color="getStatusColor(enrollment.status)" class="ml-2">
+                    {{ enrollment.status }}
+                  </v-chip>
+                </v-list-item-subtitle>
                 <template v-slot:append>
                   <v-btn 
                     icon="mdi-delete" 
                     variant="text" 
                     color="red"
-                    @click="removeStudent(student.id!)"
+                    @click="removeStudent(enrollment.student?.id!)"
                   ></v-btn>
                 </template>
               </v-list-item>
@@ -140,6 +145,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
 import PersonDto from '../../models/PersonDto'
+import StudentEnrollmentDto from '../../models/StudentEnrollmentDto'
 import RemoteService from '../../services/RemoteService'
 
 const emit = defineEmits(['people-updated', 'update:modelValue', 'curricular-unit-updated'])
@@ -168,6 +174,16 @@ const localDialog = computed({
 
 const availableTeachers = ref<{ text: string, value: number }[]>([])
 const availableStudents = ref<{ text: string, value: number }[]>([])
+
+// Helper function to get status color
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'ENROLLED': return 'blue'
+    case 'APPROVED': return 'green'
+    case 'FAILED': return 'red'
+    default: return 'grey'
+  }
+}
 
 onMounted(async () => {
   await loadAvailableTeachers()
@@ -205,15 +221,36 @@ const loadAvailableStudents = async () => {
     const people = await RemoteService.getPeople()
     const students = people.filter((person: PersonDto) => person.type === 'STUDENT')
     
-    // Filter out current students
-    const currentStudentIds = new Set(props.curricularUnit?.students.map(s => s.id) || [])
+    // Debug the curricular unit data
+    console.log('Current curricularUnit prop:', props.curricularUnit)
+    console.log('StudentEnrollments from prop:', props.curricularUnit?.studentEnrollments)
+    console.log('StudentEnrollments length:', props.curricularUnit?.studentEnrollments?.length)
+    
+    // Filter out current students (from enrollments)
+    const currentStudentIds = new Set(
+      props.curricularUnit?.studentEnrollments
+        ?.map(enrollment => {
+          console.log('Processing enrollment:', enrollment)
+          return enrollment.student?.id
+        })
+        ?.filter(id => id !== undefined) || []
+    )
+    
+    console.log('Current enrolled student IDs:', Array.from(currentStudentIds))
+    console.log('Total students found:', students.length)
     
     availableStudents.value = students
-      .filter(student => !currentStudentIds.has(student.id))
+      .filter(student => {
+        const isAlreadyEnrolled = currentStudentIds.has(student.id)
+        console.log(`Student ${student.name} (${student.id}): already enrolled = ${isAlreadyEnrolled}`)
+        return !isAlreadyEnrolled
+      })
       .map((student: PersonDto) => ({
         text: `${student.name} (${student.istId})`,
         value: student.id!
       }))
+      
+    console.log('Available students after filtering:', availableStudents.value.length)
   } catch (error) {
     console.error('Error loading students:', error)
   } finally {
@@ -256,13 +293,31 @@ const addStudent = async () => {
   if (!selectedStudent.value || !props.curricularUnit?.id) return
 
   try {
-    const updatedCurricularUnit = await RemoteService.addStudent(props.curricularUnit.id, selectedStudent.value)
+
+    
+    // Enroll the student
+    const enrollmentResult = await RemoteService.enrollStudent(props.curricularUnit.id, selectedStudent.value)
+    
+    // Get the updated curricular unit
+    const updatedCurricularUnit = await RemoteService.getCurricularUnit(props.curricularUnit.id)
+    
+    // Check each enrollment individually
+    if (updatedCurricularUnit.studentEnrollments?.length) {
+      updatedCurricularUnit.studentEnrollments.forEach((enrollment, index) => {
+      })
+    }
+    
     selectedStudent.value = null
     
     // Emit the updated curricular unit to parent
     emit('curricular-unit-updated', updatedCurricularUnit)
     emit('people-updated')
-    await loadAvailableStudents() // Refresh available students
+    
+    // Small delay to ensure parent has updated, then refresh
+    setTimeout(async () => {
+      await loadAvailableStudents()
+    }, 200)
+    
   } catch (error) {
     console.error('Error adding student:', error)
   }
@@ -272,14 +327,19 @@ const removeStudent = async (studentId: number) => {
   if (!props.curricularUnit?.id) return
 
   try {
-    const updatedCurricularUnit = await RemoteService.removeStudent(props.curricularUnit.id, studentId)
+    console.log('Removing student:', studentId, 'from curricular unit:', props.curricularUnit.id)
+    
+    // Unenroll the student and get the updated curricular unit
+    await RemoteService.unenrollStudent(props.curricularUnit.id, studentId)
+    const updatedCurricularUnit = await RemoteService.getCurricularUnit(props.curricularUnit.id)
     
     // Emit the updated curricular unit to parent
     emit('curricular-unit-updated', updatedCurricularUnit)
     emit('people-updated')
-    await loadAvailableStudents() // Refresh available students
+    
+    // Force refresh of available students
+    await loadAvailableStudents()
   } catch (error) {
-    console.error('Error removing student:', error)
   }
 }
 
@@ -288,6 +348,20 @@ watch(() => props.curricularUnit, async () => {
   if (props.curricularUnit) {
     await loadAvailableTeachers()
     await loadAvailableStudents()
+  }
+}, { deep: true })
+
+// Watch specifically for changes in student enrollments
+watch(() => props.curricularUnit?.studentEnrollments, async () => {
+  if (props.curricularUnit) {
+    await loadAvailableStudents() // Refresh available students when enrollments change
+  }
+}, { deep: true })
+
+// Watch specifically for changes in assistant teachers
+watch(() => props.curricularUnit?.assistantTeachers, async () => {
+  if (props.curricularUnit) {
+    await loadAvailableTeachers() // Refresh available teachers when assistant teachers change
   }
 }, { deep: true })
 

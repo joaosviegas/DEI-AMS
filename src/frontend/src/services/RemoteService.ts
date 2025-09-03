@@ -79,12 +79,40 @@ export default class RemoteServices {
     return httpClient.delete(`/curricular-units/${curricularUnitId}/assistant-teachers/${teacherId}`)
   }
 
-  static async addStudent(curricularUnitId: number, studentId: number): Promise<CurricularUnitDto> {
-    return httpClient.post(`/curricular-units/${curricularUnitId}/students/${studentId}`)
+  // New enrollment-based student management
+  static async enrollStudent(curricularUnitId: number, studentId: number, status: string = 'ENROLLED'): Promise<any> {
+    const params = new URLSearchParams({ curricularUnitId: curricularUnitId.toString(), studentId: studentId.toString(), status })
+    return httpClient.post('/student-enrollments', null, { params })
   }
 
-  static async removeStudent(curricularUnitId: number, studentId: number): Promise<CurricularUnitDto> {
-    return httpClient.delete(`/curricular-units/${curricularUnitId}/students/${studentId}`)
+  static async unenrollStudent(curricularUnitId: number, studentId: number): Promise<void> {
+    const params = new URLSearchParams({ curricularUnitId: curricularUnitId.toString(), studentId: studentId.toString() })
+    return httpClient.delete('/student-enrollments', { params })
+  }
+
+  static async updateEnrollmentStatus(enrollmentId: number, status: string, reason?: string): Promise<any> {
+    const params = new URLSearchParams({ status })
+    if (reason) params.append('reason', reason)
+    return httpClient.put(`/student-enrollments/${enrollmentId}/status`, null, { params })
+  }
+
+  static async completeEnrollment(enrollmentId: number, grade: number): Promise<any> {
+    const params = new URLSearchParams({ grade: grade.toString() })
+    return httpClient.put(`/student-enrollments/${enrollmentId}/complete`, null, { params })
+  }
+
+  static async withdrawEnrollment(enrollmentId: number, reason?: string): Promise<any> {
+    const params = new URLSearchParams()
+    if (reason) params.append('reason', reason)
+    return httpClient.put(`/student-enrollments/${enrollmentId}/withdraw`, null, { params })
+  }
+
+  static async getEnrollmentsByCurricularUnit(curricularUnitId: number): Promise<any[]> {
+    return httpClient.get(`/curricular-units/${curricularUnitId}/enrollments`)
+  }
+
+  static async getCurricularUnit(id: number): Promise<CurricularUnitDto> {
+    return httpClient.get(`/curricular-units/${id}`)
   }
 
   static async errorMessage(error: any): Promise<string> {

@@ -80,8 +80,13 @@
               no-data-text="Sem alunos a apresentar."
             >
               <template v-slot:[`item.status`]="{ item }">
+                <v-chip 
+                  :color="getStatusColor(item.status)" 
+                  size="small"
+                >
+                  {{ getStatusText(item.status) }}
+                </v-chip>
               </template>
-              <!-- TODO: Status will be implemented later when backend supports it -->
             </v-data-table>
           </v-tabs-window-item>
         </v-tabs-window>
@@ -124,9 +129,8 @@ const teacherHeaders = [
 const studentHeaders = [
   { title: 'Nome', key: 'name', value: 'name' },
   { title: 'IST ID', key: 'istId', value: 'istId' },
-  { title: 'Email', key: 'email', value: 'email' }
-  // TODO: Status will be added later when backend supports it
-  // { title: 'Estado', key: 'status', value: 'status' }
+  { title: 'Email', key: 'email', value: 'email' },
+  { title: 'Estado', key: 'status', value: 'status' }
 ]
 
 const allTeachers = computed(() => {
@@ -152,9 +156,34 @@ const allTeachers = computed(() => {
 })
 
 const allStudents = computed(() => {
-  if (!props.curricularUnit) return []
-  return props.curricularUnit.students || []
+  if (!props.curricularUnit?.studentEnrollments) return []
+  
+  // Transform enrollments to show student data with status
+  return props.curricularUnit.studentEnrollments.map(enrollment => ({
+    ...enrollment.student,
+    status: enrollment.status
+  }))
 })
+
+// Helper function to get status color
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'ENROLLED': return 'blue'
+    case 'APPROVED': return 'green'
+    case 'FAILED': return 'red'
+    default: return 'grey'
+  }
+}
+
+// Helper function for status display text
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'ENROLLED': return 'Inscrito';
+    case 'APPROVED': return 'Aprovado';
+    case 'FAILED': return 'Reprovado';
+    default: return 'Desconhecido';
+  }
+}
 
 // Helper functions for display
 const getSemesterText = (semester: string) => {

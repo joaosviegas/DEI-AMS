@@ -247,9 +247,9 @@ const addPeople = (curricularUnit: CurricularUnitDto) => {
 
 const updateSelectedCurricularUnit = (updatedCurricularUnit: CurricularUnitDto) => {
   console.log('Updating selected curricular unit:', updatedCurricularUnit)
-  console.log('Current students:', selectedCurricularUnit.value?.students?.length || 0)
-  console.log('New students:', updatedCurricularUnit.students?.length || 0)
-  
+  console.log('Current students:', selectedCurricularUnit.value?.studentEnrollments?.length || 0)
+  console.log('New students:', updatedCurricularUnit.studentEnrollments?.length || 0)
+
   // Update the selected curricular unit with the latest data
   selectedCurricularUnit.value = updatedCurricularUnit
   
@@ -259,7 +259,7 @@ const updateSelectedCurricularUnit = (updatedCurricularUnit: CurricularUnitDto) 
     Object.assign(curricularUnits[index], updatedCurricularUnit)
   }
   
-  console.log('Updated selected curricular unit students:', selectedCurricularUnit.value?.students?.length || 0)
+  console.log('Updated selected curricular unit students:', selectedCurricularUnit.value?.studentEnrollments?.length || 0)
 }
 
 const fuzzySearch = (value: string, search: string) => {

@@ -555,15 +555,11 @@ const formatFileSize = (bytes: number) => {
 
 // Helper functions for test files
 const getTestStatement = (evaluationId: number): ResourceDto | null => {
-  const result = testFiles.value[evaluationId]?.statement || null
-  console.log(`getTestStatement(${evaluationId}):`, result)
-  return result
+  return testFiles.value[evaluationId]?.statement || null
 }
 
 const getTestCorrection = (evaluationId: number): ResourceDto | null => {
-  const result = testFiles.value[evaluationId]?.correction || null
-  console.log(`getTestCorrection(${evaluationId}):`, result)
-  return result
+  return testFiles.value[evaluationId]?.correction || null
 }
 
 // Debug computed property

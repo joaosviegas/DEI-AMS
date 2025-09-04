@@ -12,6 +12,7 @@ import { computed } from 'vue'
 const roleStore = useRoleStore()
 
 const navbarItems = computed(() => [
+  {name: 'Início', path: '/', icon: 'mdi-home', roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR']},
   { name: 'UCs', path: '/curricular-units', icon: 'mdi-school', roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR'] },
   { name: "Cursos", path: "/courses", icon: "mdi-book-open-variant", roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR'] },
   { name: 'Pessoal', path: '/people', icon: 'mdi-account-group', roles: ['ADMINISTRATOR'] },

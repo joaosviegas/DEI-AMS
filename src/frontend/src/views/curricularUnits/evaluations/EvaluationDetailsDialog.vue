@@ -235,7 +235,7 @@ const gradeHeaders = computed(() => {
     { title: 'Aluno', key: 'studentName', value: 'studentName' },
     { title: 'IST ID', key: 'studentIstId', value: 'studentIstId' },
     { title: 'Nota', key: 'grade', value: 'grade' },
-    { title: 'Estado', key: 'status', value: 'status' },
+    { title: 'Classificação', key: 'status', value: 'status' },
     { title: 'Avaliado em', key: 'gradedAt', value: 'gradedAt' }
   ]
   
@@ -266,7 +266,7 @@ const getGradeStatusColor = (grade: number | null) => {
 
 const getGradeStatusText = (grade: number | null) => {
   if (grade === null) return 'Não avaliado'
-  return grade >= 10 ? 'Aprovado' : 'Reprovado'
+  return grade >= 10 ? 'Positiva' : 'Negativa'
 }
 
 const markAsChanged = (item: any) => {

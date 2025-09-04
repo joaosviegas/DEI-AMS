@@ -6,9 +6,12 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.EvaluationGrade;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 // Domain class representing a student's enrollment in a curricular unit
 @Entity
@@ -48,6 +51,10 @@ public class StudentEnrollment {
 
 	@Column(name = "completion_date")
 	private LocalDate completionDate;
+
+	// Relationship to handle cascade delete of evaluation grades when enrollment is deleted
+    @OneToMany(mappedBy = "studentEnrollment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<EvaluationGrade> evaluationGrades = new HashSet<>();
 
 	public StudentEnrollment(Person student, CurricularUnit curricularUnit, EnrollmentStatus status) {
 		this.student = student;

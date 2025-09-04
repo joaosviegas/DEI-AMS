@@ -1,4 +1,4 @@
-package pt.ulisboa.tecnico.rnl.dei.dms.evaluation.controller;
+package pt.ulisboa.tecnico.rnl.dei.dms.evaluation;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -41,7 +41,11 @@ public enum ErrorMessage {
 
 	// EvaluationGrade errors
 	NO_SUCH_EVALUATION_GRADE("Não existe nenhuma nota com o ID %s", 6001),
-	GRADE_NOT_VALID("A nota especificada deve estar entre 0.0 e 20.0.", 6002);
+	GRADE_NOT_VALID("A nota especificada deve estar entre 0.0 e 20.0.", 6002),
+
+	// File errors
+	EMPTY_REQUIRED_FIELD("O campo %s é obrigatório.", 7001),
+	RESOURCE_NOT_FOUND("Não foi possível encontrar o recurso %s.", 7002);
 
 	private final String label;
 	private final int code;

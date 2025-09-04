@@ -11,6 +11,8 @@ import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.repository.StudentEnrollmentRepository;
 
 import org.apache.commons.validator.routines.EmailValidator;
 
@@ -21,6 +23,9 @@ public class PersonService {
 
 	@Autowired
 	private PersonRepository personRepository;
+	
+	@Autowired
+	private StudentEnrollmentRepository studentEnrollmentRepository;
 
 	private Person fetchPersonOrThrow(long id) {
 		return personRepository.findById(id)
@@ -81,7 +86,19 @@ public class PersonService {
 	@Transactional
 	public void deletePerson(long id) {
 		fetchPersonOrThrow(id); // ensure exists
-
+		
+		// Get all student enrollments for this person
+		List<StudentEnrollment> enrollments = studentEnrollmentRepository.findByStudentId(id);
+		
+		// Delete student enrollments (this will cascade delete evaluation grades)
+		for (StudentEnrollment enrollment : enrollments) {
+			studentEnrollmentRepository.delete(enrollment);
+		}
+		
+		// TODO: Handle cases where person is a main teacher or assistant teacher
+		// You might want to prevent deletion or reassign curricularUnits
+		
+		// Finally, delete the person
 		personRepository.deleteById(id);
 	}
 }

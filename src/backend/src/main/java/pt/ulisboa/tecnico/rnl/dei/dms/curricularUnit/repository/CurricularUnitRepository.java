@@ -26,6 +26,10 @@ public interface CurricularUnitRepository extends JpaRepository<CurricularUnit, 
     // Find CUs by course
     List<CurricularUnit> findByCourses(Course course);
     
+    // Find CUs by course ID
+    @Query("SELECT DISTINCT cu FROM CurricularUnit cu JOIN cu.courses c WHERE c.id = :courseId")
+    List<CurricularUnit> findByCourses_Id(@Param("courseId") Long courseId);
+    
     // Find CUs by semester
     List<CurricularUnit> findBySemester(CurricularUnit.Semester semester);
     

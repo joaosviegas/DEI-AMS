@@ -11,6 +11,8 @@ import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.domain.Course;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.dto.CourseDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.course.repository.CourseRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
+import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository.CurricularUnitRepository;
 
 // Service class for managing Course entities
 @Service
@@ -19,6 +21,9 @@ public class CourseService {
 
     @Autowired
     private CourseRepository courseRepository;
+    
+    @Autowired
+    private CurricularUnitRepository curricularUnitRepository;
 
     private Course fetchCourseOrThrow(long id) {
         return courseRepository.findById(id)
@@ -71,8 +76,18 @@ public class CourseService {
 
     @Transactional
     public void deleteCourse(long id) {
-        fetchCourseOrThrow(id); // ensure exists
-
+        Course course = fetchCourseOrThrow(id); // ensure exists
+        
+        // Find all curricular units that use this course
+        List<CurricularUnit> curricularUnits = curricularUnitRepository.findByCourses_Id(id);
+        
+        // Remove this course from all curricular units
+        for (CurricularUnit curricularUnit : curricularUnits) {
+            curricularUnit.removeCourse(course);
+            curricularUnitRepository.save(curricularUnit);
+        }
+        
+        // Now we can safely delete the course
         courseRepository.deleteById(id);
     }
 }

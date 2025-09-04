@@ -42,8 +42,6 @@ public class Person {
     private PersonType type;
 
 
-	// TODO: maybe add more fields? ...or maybe not? what makes sense here?
-
 	protected Person() {
 	}
 

@@ -85,11 +85,19 @@
   />
 
   <!-- Delete Dialog -->
-  <DeleteCurricularUnitDialog 
+  <ConfirmDeleteDialog 
     v-if="isAdmin"
     v-model="showDeleteDialog"
-    :curricular-unit="selectedCurricularUnit"
-    @curricular-unit-deleted="getCurricularUnits"
+    title="Remover Unidade Curricular"
+    :message="`Tem a certeza de que deseja remover permanentemente a unidade curricular '${selectedCurricularUnit?.name}'?`"
+    item-type="unidade curricular"
+    :item-name="selectedCurricularUnit?.name"
+    :item-subtitle="`Código: ${selectedCurricularUnit?.code} • ${selectedCurricularUnit?.ects} ECTS`"
+    icon="mdi-book-education-outline"
+    icon-color="purple"
+    confirm-text="Remover Unidade Curricular"
+    warning-message="Esta ação eliminará permanentemente a unidade curricular, todas as inscrições de alunos e avaliações associadas."
+    @confirm="executeDeleteCurricularUnit"
   />
 
   <!-- Add People Dialog -->
@@ -108,7 +116,7 @@ import RemoteService from '../../services/RemoteService'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
 import CreateCurricularUnitDialog from './CreateCurricularUnitsDialog.vue'
 import EditCurricularUnitDialog from './EditCurricularUnitsDialog.vue'
-import DeleteCurricularUnitDialog from './DeleteCurricularUnitsDialog.vue'
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CurricularUnitDetailsDialog from './CurricularUnitDetailsDialog.vue'
 
@@ -229,9 +237,28 @@ const editCurricularUnit = (curricularUnit: CurricularUnitDto) => {
 }
 
 const deleteCurricularUnit = (curricularUnit: CurricularUnitDto) => {
-  console.log('Deleting curricular unit:', curricularUnit)
+  console.log('Preparing to delete curricular unit:', curricularUnit)
   selectedCurricularUnit.value = curricularUnit
   showDeleteDialog.value = true
+}
+
+// Actually execute the deletion
+const executeDeleteCurricularUnit = async () => {
+  if (!selectedCurricularUnit.value?.id) return
+  
+  try {
+    await RemoteService.deleteCurricularUnit(selectedCurricularUnit.value.id)
+    
+    // Refresh the curricular units list
+    await getCurricularUnits()
+    
+    // Close dialog and reset
+    showDeleteDialog.value = false
+    selectedCurricularUnit.value = undefined
+  } catch (error) {
+    console.error('Error deleting curricular unit:', error)
+    // TODO: Show error message to user
+  }
 }
 
 // Permission check - only main teacher can add people to UC

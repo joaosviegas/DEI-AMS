@@ -56,11 +56,20 @@
     @person-updated="getPeople"
   />
 
-  <DeletePersonDialog
+  <ConfirmDeleteDialog
     v-if="isAdmin"
     v-model="showDeleteDialog"
-    :person="selectedPerson"
-    @person-deleted="getPeople"
+    title="Remover Pessoa"
+    :message="`Tem a certeza de que deseja remover a pessoa '${selectedPerson?.name}'?`"
+    item-type="pessoa"
+    :item-name="selectedPerson?.name"
+    :item-subtitle="`IST ID: ${selectedPerson?.istId}`"
+    icon="mdi-account-remove"
+    icon-color="red"
+    confirm-text="Remover Pessoa"
+    warning-message="Esta ação não pode ser desfeita e eliminará permanentemente todos os dados associados a esta pessoa."
+    @confirm="executeDeletePerson"
+    @update:modelValue="val => { if (!val) selectedPerson = undefined }"
   />
 
 </template>
@@ -68,11 +77,11 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
 import { useRoleStore } from '../../stores/role'
-import type PersonDto from '@/models/PersonDto'
-import RemoteService from '@/services/RemoteService'
+import type PersonDto from '../../models/PersonDto'
+import RemoteService from '../../services/RemoteService'
 import CreatePersonDialog from './CreatePersonDialog.vue'
-import DeletePersonDialog from './DeletePersonDialog.vue'
 import EditPersonDialog from './EditPersonDialog.vue'
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 
 let search = ref('')
 let loading = ref(true)
@@ -150,9 +159,28 @@ const editPerson = (person: PersonDto) => {
 
 // Open the delete dialog
 const deletePerson = (person: PersonDto) => {
-  console.log('Deleting person:', person)
+  console.log('Preparing to delete person:', person)
   selectedPerson.value = person
   showDeleteDialog.value = true
+}
+
+// Actually execute the deletion
+const executeDeletePerson = async () => {
+  if (!selectedPerson.value?.id) return
+  
+  try {
+    await RemoteService.deletePerson(selectedPerson.value.id)
+    
+    // Refresh the people list
+    await getPeople()
+    
+    // Close dialog and reset
+    showDeleteDialog.value = false
+    selectedPerson.value = undefined
+  } catch (error) {
+    console.error('Error deleting person:', error)
+    // TODO: Show error message to user
+  }
 }
 
 

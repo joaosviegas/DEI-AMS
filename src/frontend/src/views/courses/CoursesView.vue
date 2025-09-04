@@ -40,11 +40,19 @@
     @course-updated="getCourses"
   />
   
-  <DeleteCourseDialog 
+  <ConfirmDeleteDialog 
     v-if="isAdmin"
     v-model="showDeleteDialog"
-    :course="selectedCourse"
-    @course-deleted="getCourses"
+    title="Remover Curso"
+    :message="`Tem a certeza de que deseja remover permanentemente o curso '${selectedCourse?.name}'?`"
+    item-type="curso"
+    :item-name="selectedCourse?.name"
+    :item-subtitle="`Código: ${selectedCourse?.code} • Duração: ${selectedCourse?.duration} anos`"
+    icon="mdi-book-education"
+    icon-color="blue"
+    confirm-text="Remover Curso"
+    warning-message="Esta ação eliminará permanentemente o curso e todas as suas unidades curriculares associadas."
+    @confirm="executeDeleteCourse"
   />
 </template>
 
@@ -53,7 +61,7 @@ import CourseDto from '../../models/CourseDto'
 import RemoteService from '../../services/RemoteService'
 import CreateCourseDialog from './CreateCourseDialog.vue'
 import EditCourseDialog from './EditCourseDialog.vue'
-import DeleteCourseDialog from './DeleteCourseDialog.vue'
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 import { reactive, ref, computed } from 'vue'
 import { useRoleStore } from '../../stores/role'
 
@@ -130,9 +138,28 @@ const editCourse = (course: CourseDto) => {
 
 // Open the delete dialog
 const deleteCourse = (course: CourseDto) => {
-  console.log('Deleting course:', course)
+  console.log('Preparing to delete course:', course)
   selectedCourse.value = course
   showDeleteDialog.value = true
+}
+
+// Actually execute the deletion
+const executeDeleteCourse = async () => {
+  if (!selectedCourse.value?.id) return
+  
+  try {
+    await RemoteService.deleteCourse(selectedCourse.value.id)
+    
+    // Refresh the courses list
+    await getCourses()
+    
+    // Close dialog and reset
+    showDeleteDialog.value = false
+    selectedCourse.value = undefined
+  } catch (error) {
+    console.error('Error deleting course:', error)
+    // TODO: Show error message to user
+  }
 }
 
 const fuzzySearch = (value: string, search: string) => {

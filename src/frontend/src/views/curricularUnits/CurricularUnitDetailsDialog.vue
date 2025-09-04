@@ -168,7 +168,6 @@
                   v-if="canManageEvaluations"
                   icon="mdi-delete"
                   variant="text"
-                  color="red"
                   size="small"
                   @click="confirmDeleteTest(item)"
                   title="Eliminar"
@@ -202,6 +201,21 @@
     v-model="showEvaluationDetailsDialog"
     :evaluation="selectedEvaluation"
   />
+
+  <!-- Delete Test Confirmation Dialog -->
+  <ConfirmDeleteDialog
+    v-model="showDeleteDialog"
+    title="Eliminar Teste"
+    :message="`Tem a certeza de que deseja eliminar o teste '${testToDelete?.title}'?`"
+    item-type="teste"
+    :item-name="testToDelete?.title"
+    :item-subtitle="`${formatDate(testToDelete?.date || '')} • Peso: ${(testToDelete?.weight || 0) * 100}%`"
+    icon="mdi-file-document-outline"
+    icon-color="green"
+    confirm-text="Eliminar Teste"
+    warning-message="Esta ação eliminará permanentemente o teste e todas as notas associadas."
+    @confirm="deleteTest"
+  />
   
 </template>
 
@@ -214,6 +228,7 @@ import { useRoleStore } from '../../stores/role'
 import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CreateTestDialog from './evaluations/CreateTestDialog.vue'
 import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 
 const emit = defineEmits(['update:modelValue', 'curricular-unit-updated'])
 
@@ -241,6 +256,10 @@ const loadingEvaluations = ref(false)
 const showCreateTestDialog = ref(false)
 const showEvaluationDetailsDialog = ref(false)
 const selectedEvaluation = ref<TestDto | undefined>()
+
+// Delete confirmation dialog
+const showDeleteDialog = ref(false)
+const testToDelete = ref<TestDto | null>(null)
 
 // Computed property that always returns the most up-to-date curricular unit
 const curricularUnit = computed(() => {
@@ -369,8 +388,26 @@ const openEvaluationDetails = (evaluation: TestDto) => {
 }
 
 const confirmDeleteTest = (evaluation: TestDto) => {
-  // TODO: Implement delete confirmation
-  console.log('Confirming delete for:', evaluation)
+  testToDelete.value = evaluation
+  showDeleteDialog.value = true
+}
+
+const deleteTest = async () => {
+  if (!testToDelete.value?.id) return
+  
+  try {
+    await RemoteService.deleteTest(testToDelete.value.id)
+    
+    // Refresh evaluations list
+    await loadEvaluations()
+    
+    // Reset and close dialog
+    testToDelete.value = null
+    showDeleteDialog.value = false
+  } catch (error) {
+    console.error('Error deleting test:', error)
+    // TODO: Show error message to user
+  }
 }
 
 // Methods for opening AddPeopleDialog with correct tab
@@ -384,7 +421,7 @@ const openAddStudentsDialog = () => {
   showAddPeopleDialog.value = true
 }
 
-// Event handlers for AddPeopleDialog
+// Event handlers for ManagePeopleDialog
 const handlePeopleUpdated = () => {
   // This would typically refresh the curricular unit data
   // For now, we'll emit to the parent to handle the refresh

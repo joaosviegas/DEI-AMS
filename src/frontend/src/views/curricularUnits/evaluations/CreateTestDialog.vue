@@ -44,7 +44,7 @@
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn text="Cancelar" @click="cancel"></v-btn>
+        <v-btn text="Cancelar" variant="plain" @click="cancel"></v-btn>
         <v-btn 
           color="primary" 
           text="Criar" 

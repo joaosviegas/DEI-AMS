@@ -141,18 +141,32 @@
   </v-dialog>
 
   <!-- Remove Student Confirmation Dialog -->
-  <ConfirmRemovePersonDialog
+  <ConfirmDeleteDialog
     v-model="showRemoveStudentDialog"
-    person-type="student"
-    :person-name="studentToRemove?.name || ''"
+    title="Remover Aluno"
+    :message="`Tem a certeza de que deseja remover o aluno '${studentToRemove?.name}' desta unidade curricular?`"
+    item-type="aluno"
+    :item-name="studentToRemove?.name"
+    :item-subtitle="''"
+    icon="mdi-account-school"
+    icon-color="green"
+    confirm-text="Remover Aluno"
+    warning-message="O aluno será removido da unidade curricular e todas as suas notas serão eliminadas."
     @confirm="confirmRemoveStudentAction"
   />
 
   <!-- Remove Teacher Confirmation Dialog -->
-  <ConfirmRemovePersonDialog
+  <ConfirmDeleteDialog
     v-model="showRemoveTeacherDialog"
-    person-type="teacher"
-    :person-name="teacherToRemove?.name || ''"
+    title="Remover Professor Assistente"
+    :message="`Tem a certeza de que deseja remover o professor '${teacherToRemove?.name}' desta unidade curricular?`"
+    item-type="professor"
+    :item-name="teacherToRemove?.name"
+    :item-subtitle="''"
+    icon="mdi-account"
+    icon-color="blue"
+    confirm-text="Remover Professor"
+    warning-message="O professor será removido da unidade curricular."
     @confirm="confirmRemoveTeacherAction"
   />
 </template>
@@ -163,7 +177,7 @@ import CurricularUnitDto from '../../models/CurricularUnitDto'
 import PersonDto from '../../models/PersonDto'
 import StudentEnrollmentDto from '../../models/StudentEnrollmentDto'
 import RemoteService from '../../services/RemoteService'
-import ConfirmRemovePersonDialog from './ConfirmRemovePersonDialog.vue'
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 
 const emit = defineEmits(['people-updated', 'update:modelValue', 'curricular-unit-updated'])
 

@@ -59,10 +59,10 @@
             <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
               <v-btn 
                 color="primary" 
-                prepend-icon="mdi-account-plus"
+                prepend-icon="mdi-account-edit"
                 @click="openAddTeachersDialog"
               >
-                Adicionar Professores
+                Gerir Professores
               </v-btn>
             </div>
 
@@ -89,10 +89,10 @@
             <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
               <v-btn 
                 color="primary" 
-                prepend-icon="mdi-account-plus"
+                prepend-icon="mdi-account-edit"
                 @click="openAddStudentsDialog"
               >
-                Adicionar Alunos
+                Gerir Alunos
               </v-btn>
             </div>
 
@@ -149,7 +149,7 @@
               </template>
               <template v-slot:[`item.actions`]="{ item }">
                 <v-btn
-                  v-if="canViewEvaluations"
+                v-if="roleStore.isStudent"
                   icon="mdi-eye"
                   variant="text"
                   size="small"
@@ -161,7 +161,7 @@
                   icon="mdi-clipboard-edit"
                   variant="text"
                   size="small"
-                  @click="openGradesDialog(item)"
+                  @click="openEvaluationDetails(item)"
                   title="Atribuir Notas"
                 ></v-btn>
                 <v-btn 
@@ -184,7 +184,7 @@
   <!-- AddPeople Dialog -->
   <AddPeopleDialog 
     v-model="showAddPeopleDialog"
-    :curricular-unit="props.curricularUnit"
+    :curricular-unit="curricularUnit"
     :initial-tab="addPeopleInitialTab"
     @people-updated="handlePeopleUpdated"
     @curricular-unit-updated="handleCurricularUnitUpdated"
@@ -203,23 +203,17 @@
     :evaluation="selectedEvaluation"
   />
   
-  <!-- Grades Dialog (for students) -->
-  <GradesDialog
-    v-model="showGradesDialog"
-    :evaluation="selectedEvaluation"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
 import TestDto from '../../models/TestDto'
 import RemoteService from '../../services/RemoteService'
 import { useRoleStore } from '../../stores/role'
-import AddPeopleDialog from './AddPeopleDialog.vue'
+import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CreateTestDialog from './evaluations/CreateTestDialog.vue'
 import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
-import GradesDialog from './evaluations/GradesDialog.vue'
 
 const emit = defineEmits(['update:modelValue', 'curricular-unit-updated'])
 
@@ -246,8 +240,12 @@ const allEvaluations = ref<TestDto[]>([])
 const loadingEvaluations = ref(false)
 const showCreateTestDialog = ref(false)
 const showEvaluationDetailsDialog = ref(false)
-const showGradesDialog = ref(false)
 const selectedEvaluation = ref<TestDto | undefined>()
+
+// Computed property that always returns the most up-to-date curricular unit
+const curricularUnit = computed(() => {
+  return selectedCurricularUnit.value || props.curricularUnit
+})
 
 const localDialog = computed({
   get: () => props.modelValue,
@@ -277,18 +275,18 @@ const evaluationHeaders = [
 ]
 
 const allTeachers = computed(() => {
-  if (!props.curricularUnit) return []
+  if (!curricularUnit.value) return []
   
   const teachers = []
   
   // Add main teacher
   teachers.push({
-    ...props.curricularUnit.mainTeacher,
+    ...curricularUnit.value.mainTeacher,
     type: 'Regente'
   })
   
   // Add assistant teachers
-  props.curricularUnit.assistantTeachers.forEach(teacher => {
+  curricularUnit.value.assistantTeachers.forEach(teacher => {
     teachers.push({
       ...teacher,
       type: 'Assistente'
@@ -307,15 +305,11 @@ const canGradeEvaluations = computed(() => {
   return roleStore.isMainTeacher || roleStore.isTeachingAssistant
 })
 
-const canViewEvaluations = computed(() => {
-  return canManageEvaluations.value || canGradeEvaluations.value || roleStore.isStudent
-})
-
 const allStudents = computed(() => {
-  if (!props.curricularUnit?.studentEnrollments) return []
+  if (!curricularUnit.value?.studentEnrollments) return []
   
   // Transform enrollments to show student data with status
-  return props.curricularUnit.studentEnrollments.map(enrollment => ({
+  return curricularUnit.value.studentEnrollments.map(enrollment => ({
     ...enrollment.student,
     status: enrollment.status
   }))
@@ -356,25 +350,16 @@ const formatDate = (dateString: string) => {
 
 // Evaluation management functions
 const loadEvaluations = async () => {
-  if (!props.curricularUnit?.id) return
+  if (!curricularUnit.value?.id) return
   
   loadingEvaluations.value = true
   try {
-    const evaluations = await RemoteService.getTestsByCurricularUnit(props.curricularUnit.id)
+    const evaluations = await RemoteService.getTestsByCurricularUnit(curricularUnit.value.id)
     allEvaluations.value = evaluations.map(TestDto.fromBackend)
   } catch (error) {
     console.error('Error loading evaluations:', error)
   } finally {
     loadingEvaluations.value = false
-  }
-}
-
-const openGradesDialog = (evaluation: TestDto) => {
-  selectedEvaluation.value = evaluation
-  if (roleStore.isStudent) {
-    showGradesDialog.value = true
-  } else {
-    showEvaluationDetailsDialog.value = true
   }
 }
 
@@ -407,14 +392,24 @@ const handlePeopleUpdated = () => {
 }
 
 const handleCurricularUnitUpdated = (updatedCU: CurricularUnitDto) => {
-  // Update local data if needed
+  // Update local data to trigger reactivity
   selectedCurricularUnit.value = updatedCU
-  emit('curricular-unit-updated', updatedCU)
+  // Force update of allStudents and allTeachers computeds by triggering a re-render
+  nextTick(() => {
+    emit('curricular-unit-updated', updatedCU)
+  })
 }
 
 // Watch for curricular unit changes to load evaluations
-watch(() => props.curricularUnit, async () => {
-  if (props.curricularUnit) {
+watch(() => curricularUnit.value, async (newCU) => {
+  if (newCU) {
+    await loadEvaluations()
+  }
+}, { immediate: true })
+
+// Also watch props.curricularUnit for initial load
+watch(() => props.curricularUnit, async (newCU) => {
+  if (newCU && !selectedCurricularUnit.value) {
     await loadEvaluations()
   }
 }, { immediate: true })

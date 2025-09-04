@@ -109,7 +109,7 @@ import CurricularUnitDto from '../../models/CurricularUnitDto'
 import CreateCurricularUnitDialog from './CreateCurricularUnitsDialog.vue'
 import EditCurricularUnitDialog from './EditCurricularUnitsDialog.vue'
 import DeleteCurricularUnitDialog from './DeleteCurricularUnitsDialog.vue'
-import AddPeopleDialog from './AddPeopleDialog.vue'
+import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CurricularUnitDetailsDialog from './CurricularUnitDetailsDialog.vue'
 
 let search = ref('')

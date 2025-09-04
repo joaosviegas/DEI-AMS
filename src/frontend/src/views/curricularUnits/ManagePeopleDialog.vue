@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="localDialog" max-width="700">
-    <v-card prepend-icon="mdi-account-plus" title="Adicionar Pessoas">
+    <v-card prepend-icon="mdi-account-edit" title="Gerir Pessoas">
       <v-card-text>
         <v-row>
           <v-col cols="12">

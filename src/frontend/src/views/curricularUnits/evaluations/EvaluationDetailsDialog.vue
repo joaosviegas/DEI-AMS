@@ -111,6 +111,7 @@
           </template>
 
           <template v-slot:[`item.actions`]="{ item }">
+            <!-- Teachers: View revision requests -->
             <v-btn 
               v-if="item.revisionRequested && canGrade"
               icon="mdi-eye"
@@ -118,18 +119,73 @@
               size="small"
               @click="viewRevisionRequest(item)"
               title="Ver pedido de revisão"
+              color="orange"
             ></v-btn>
+            
+            <!-- Students: Request revision (only if they have a grade and haven't requested yet) -->
             <v-btn 
-              v-if="!canGrade && item.grade !== null"
+              v-if="!canGrade && item.grade !== null && !item.revisionRequested"
               icon="mdi-clipboard-edit"
               variant="text"
               size="small"
-              @click="requestRevision(item)"
+              @click="openRevisionDialog(item)"
               title="Solicitar revisão"
+              color="orange"
             ></v-btn>
+            
+            <!-- Students: Show pending revision status -->
+            <v-chip
+              v-if="!canGrade && item.revisionRequested"
+              color="orange"
+              size="small"
+              prepend-icon="mdi-clock-outline"
+            >
+              Revisão Pendente
+            </v-chip>
           </template>
         </v-data-table>
       </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <!-- Revision Request Dialog -->
+  <v-dialog v-model="showRevisionDialog" max-width="500">
+    <v-card prepend-icon="mdi-clipboard-edit" title="Solicitar Revisão de Nota">
+      <v-card-text>
+        <div v-if="selectedGradeForRevision">
+          <div class="mb-4">
+            <strong>Avaliação:</strong> {{ evaluation?.title }}<br>
+            <strong>Nota Atual:</strong> {{ formatGrade(selectedGradeForRevision.grade) }}/20
+          </div>
+          
+          <p class="mb-4">
+            Deseja solicitar uma revisão da sua nota para esta avaliação?
+          </p>
+          
+          <v-textarea
+            v-model="revisionReason"
+            label="Motivo da solicitação"
+            placeholder="Descreva o motivo pelo qual solicita a revisão da nota..."
+            rows="4"
+            :rules="[v => !!v || 'Motivo é obrigatório']"
+            required
+          ></v-textarea>
+        </div>
+      </v-card-text>
+
+      <v-divider></v-divider>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn text="Cancelar" @click="cancelRevisionRequest"></v-btn>
+        <v-btn 
+          color="orange" 
+          text="Solicitar Revisão" 
+          @click="submitRevisionRequest"
+          :loading="submittingRevision"
+          :disabled="!revisionReason.trim()"
+        ></v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
@@ -158,6 +214,12 @@ const loading = ref(false)
 const saving = ref(false)
 const studentGrades = ref<any[]>([])
 const hasChanges = ref(false)
+
+// Revision request variables
+const showRevisionDialog = ref(false)
+const revisionReason = ref('')
+const submittingRevision = ref(false)
+const selectedGradeForRevision = ref<any>(null)
 
 const localDialog = computed({
   get: () => props.modelValue,
@@ -228,6 +290,7 @@ const loadGrades = async () => {
       gradedAt: grade.gradedAt,
       revisionRequested: grade.revisionRequested || false,
       revisionReason: grade.revisionReason,
+      revisionRequestedAt: grade.revisionRequestedAt,
       changed: false
     }))
   } catch (error) {
@@ -263,14 +326,45 @@ const saveAllGrades = async () => {
   }
 }
 
-const viewRevisionRequest = (item: any) => {
-  // TODO: Implement revision request dialog
-  console.log('View revision request for:', item)
+// Revision request functions
+const openRevisionDialog = (item: any) => {
+  selectedGradeForRevision.value = item
+  showRevisionDialog.value = true
 }
 
-const requestRevision = (item: any) => {
-  // TODO: Implement revision request dialog
-  console.log('Request revision for:', item)
+const cancelRevisionRequest = () => {
+  showRevisionDialog.value = false
+  revisionReason.value = ''
+  selectedGradeForRevision.value = null
+}
+
+const submitRevisionRequest = async () => {
+  if (!selectedGradeForRevision.value?.id || !revisionReason.value.trim()) return
+  
+  submittingRevision.value = true
+  try {
+    await RemoteService.requestGradeRevision(selectedGradeForRevision.value.id, revisionReason.value)
+    
+    // Update local state
+    selectedGradeForRevision.value.revisionRequested = true
+    selectedGradeForRevision.value.revisionReason = revisionReason.value
+    selectedGradeForRevision.value.revisionRequestedAt = new Date().toISOString()
+    
+    // Close dialog and reset
+    cancelRevisionRequest()
+    
+    // Refresh the grades to get updated data
+    await loadGrades()
+  } catch (error) {
+    console.error('Error requesting revision:', error)
+  } finally {
+    submittingRevision.value = false
+  }
+}
+
+const viewRevisionRequest = (item: any) => {
+  // For teachers to view revision requests - show alert for now
+  alert(`Pedido de revisão de ${item.studentName}:\n\nMotivo: ${item.revisionReason}\n\nSolicitado em: ${formatDateTime(item.revisionRequestedAt)}`)
 }
 
 // Watch for evaluation changes to load grades

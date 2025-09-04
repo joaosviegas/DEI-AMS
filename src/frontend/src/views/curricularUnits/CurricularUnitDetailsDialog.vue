@@ -116,9 +116,9 @@
 
           <!-- Evaluations Tab -->
           <v-tabs-window-item>
-            <!-- Create Test Button (Only for Main Teachers) -->
+            <!-- Create Button (Only for Main Teachers) -->
             <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
-              <v-btn 
+              <v-btn
                 color="primary" 
                 prepend-icon="mdi-plus"
                 @click="showCreateTestDialog = true"
@@ -126,6 +126,22 @@
                 Criar Teste
               </v-btn>
             </div>
+
+            <!-- Hidden file inputs for test uploads -->
+            <input
+              ref="testStatementInput"
+              type="file"
+              style="display: none"
+              @change="handleTestStatementUpload"
+              accept=".pdf"
+            />
+            <input
+              ref="testCorrectionInput"
+              type="file"
+              style="display: none"
+              @change="handleTestCorrectionUpload"
+              accept=".pdf"
+            />
 
             <v-data-table
               :headers="evaluationHeaders"
@@ -149,14 +165,42 @@
                 {{ item.weight*100 }}% <!-- Show weight as percentage -->
               </template>
               <template v-slot:[`item.actions`]="{ item }">
+                <!-- Student actions -->
                 <v-btn
-                v-if="roleStore.isStudent"
+                  v-if="roleStore.isStudent"
                   icon="mdi-eye"
                   variant="text"
                   size="small"
                   @click="openEvaluationDetails(item)"
                   title="Ver Notas"
+                  class="mr-1"
                 ></v-btn>
+
+                <!-- Student test file downloads (only for TEST type) -->
+                <template v-if="roleStore.isStudent && item.type === 'TEST'">
+                  <v-btn
+                    v-if="getTestStatement(item.id)"
+                    icon="mdi-file-document-outline"
+                    variant="text"
+                    size="small"
+                    color="blue"
+                    @click="downloadResource(getTestStatement(item.id)!)"
+                    title="Descarregar Enunciado"
+                    class="mr-1"
+                  ></v-btn>
+                  <v-btn
+                    v-if="getTestCorrection(item.id)"
+                    icon="mdi-file-check-outline"
+                    variant="text"
+                    size="small"
+                    color="green"
+                    @click="downloadResource(getTestCorrection(item.id)!)"
+                    title="Descarregar Correção"
+                    class="mr-1"
+                  ></v-btn>
+                </template>
+                
+                <!-- Teacher actions -->
                 <v-btn 
                   v-if="canGradeEvaluations"
                   icon="mdi-clipboard-edit"
@@ -164,7 +208,29 @@
                   size="small"
                   @click="openEvaluationDetails(item)"
                   title="Atribuir Notas"
+                  class="mr-1"
                 ></v-btn>
+
+                <!-- Teacher test file uploads (only for TEST type) -->
+                <template v-if="canGradeEvaluations && item.type === 'TEST'">
+                  <v-btn
+                    icon="mdi-upload"
+                    variant="text"
+                    size="small"
+                    @click="triggerTestStatementUpload(item.id)"
+                    title="Carregar Enunciado"
+                    class="mr-1"
+                  ></v-btn>
+                  <v-btn
+                    icon="mdi-upload"
+                    variant="text"
+                    size="small"
+                    @click="triggerTestCorrectionUpload(item.id)"
+                    title="Carregar Correção"
+                    class="mr-1"
+                  ></v-btn>
+                </template>
+
                 <v-btn
                   v-if="canManageEvaluations"
                   icon="mdi-pencil"
@@ -172,6 +238,7 @@
                   size="small"
                   @click="openEditTestDialog(item)"
                   title="Editar"
+                  class="mr-1"
                 ></v-btn>
                 <v-btn 
                   v-if="canManageEvaluations"
@@ -187,7 +254,7 @@
           <!-- Resources Tab -->
           <v-tabs-window-item>
             <!-- Upload File Buttons (Only for Teachers) -->
-            <div v-if="canGradeEvaluations" class="mb-4 d-flex justify-end">
+            <div v-if="canGradeEvaluations" class="mb-4 d-flex justify-end gap-2">
               <input
                 ref="fileInput"
                 type="file"
@@ -332,6 +399,8 @@ const showAddPeopleDialog = ref(false)
 const addPeopleInitialTab = ref(0) // 0 for Teachers, 1 for Students
 const selectedCurricularUnit = ref<CurricularUnitDto>()
 const fileInput = ref<HTMLInputElement>()
+const testStatementInput = ref<HTMLInputElement>()
+const testCorrectionInput = ref<HTMLInputElement>()
 
 const activeTab = ref(0)
 const roleStore = useRoleStore()
@@ -346,6 +415,10 @@ const selectedEvaluation = ref<TestDto | undefined>()
 // Resources data
 const allResources = ref<ResourceDto[]>([])
 const loadingResources = ref(false)
+
+// Test files tracking per evaluation ID
+const testFiles = ref<{[evaluationId: number]: { statement?: ResourceDto, correction?: ResourceDto }}>({})
+const currentUploadEvaluationId = ref<number | null>(null)
 
 // Edit dialog
 const showEditTestDialog = ref(false)
@@ -480,6 +553,25 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+// Helper functions for test files
+const getTestStatement = (evaluationId: number): ResourceDto | null => {
+  const result = testFiles.value[evaluationId]?.statement || null
+  console.log(`getTestStatement(${evaluationId}):`, result)
+  return result
+}
+
+const getTestCorrection = (evaluationId: number): ResourceDto | null => {
+  const result = testFiles.value[evaluationId]?.correction || null
+  console.log(`getTestCorrection(${evaluationId}):`, result)
+  return result
+}
+
+// Debug computed property
+const debugTestFiles = computed(() => {
+  console.log('Current testFiles:', testFiles.value)
+  return testFiles.value
+})
+
 // Evaluation management functions
 const loadEvaluations = async () => {
   if (!curricularUnit.value?.id) return
@@ -524,11 +616,37 @@ const deleteTest = async () => {
     showDeleteDialog.value = false
   } catch (error) {
     console.error('Error deleting test:', error)
-    // TODO: Show error message to user
   }
 }
 
 // Resource management functions
+const saveTestFilesToStorage = () => {
+  if (curricularUnit.value?.id) {
+    localStorage.setItem(
+      `testFiles_${curricularUnit.value.id}`, 
+      JSON.stringify(testFiles.value)
+    )
+  }
+}
+
+const loadTestFilesFromStorage = () => {
+  if (!curricularUnit.value?.id) return
+  
+  const saved = localStorage.getItem(`testFiles_${curricularUnit.value.id}`)
+  if (saved) {
+    const savedTestFiles = JSON.parse(saved)
+    // Rebuild test files references from loaded resources
+    for (const [evalId, files] of Object.entries(savedTestFiles)) {
+      const evaluationId = parseInt(evalId)
+      const filesObj = files as any
+      testFiles.value[evaluationId] = {
+        statement: filesObj.statement ? allResources.value.find((r: ResourceDto) => r.id === filesObj.statement.id) : undefined,
+        correction: filesObj.correction ? allResources.value.find((r: ResourceDto) => r.id === filesObj.correction.id) : undefined
+      }
+    }
+  }
+}
+
 const loadResources = async () => {
   if (!curricularUnit.value?.id) {
     console.log('No curricular unit ID available for loading resources')
@@ -542,7 +660,12 @@ const loadResources = async () => {
     const materials = await RemoteService.getMaterials(curricularUnit.value.id)
     console.log('Loaded materials:', materials)
     allResources.value = materials
+    
+    // Load test files tracking after resources are loaded
+    loadTestFilesFromStorage()
+    
     console.log('Resources updated in component:', allResources.value)
+    console.log('Test files:', testFiles.value)
   } catch (error) {
     console.error('Error loading resources:', error)
   } finally {
@@ -552,6 +675,17 @@ const loadResources = async () => {
 
 const triggerFileUpload = () => {
   fileInput.value?.click()
+}
+
+const triggerTestStatementUpload = (evaluationId: number) => {
+  console.log('triggerTestStatementUpload called with evaluationId:', evaluationId)
+  currentUploadEvaluationId.value = evaluationId
+  testStatementInput.value?.click()
+}
+
+const triggerTestCorrectionUpload = (evaluationId: number) => {
+  currentUploadEvaluationId.value = evaluationId
+  testCorrectionInput.value?.click()
 }
 
 const handleFileUpload = async (event: Event) => {
@@ -580,6 +714,119 @@ const handleFileUpload = async (event: Event) => {
     console.log('File uploaded successfully')
   } catch (error) {
     console.error('Error uploading file:', error)
+  }
+}
+
+const handleTestStatementUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file || !curricularUnit.value?.id || !currentUploadEvaluationId.value) {
+    console.log('No file selected, no curricular unit ID, or no evaluation ID')
+    return
+  }
+  
+  const evaluationId = currentUploadEvaluationId.value
+  
+  try {
+    console.log('Uploading test statement for evaluation:', evaluationId, 'file:', file.name)
+    
+    // If there's already a test statement file for this evaluation, delete it first
+    const existingStatement = getTestStatement(evaluationId)
+    if (existingStatement) {
+      await RemoteService.deleteResource(existingStatement.id)
+    }
+    
+    const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
+    console.log('Test statement upload response:', response)
+    
+    // Reload resources first to get the new file
+    await loadResources()
+    
+    // Find the newly uploaded file and track it AFTER resources are loaded
+    // Note: Backend adds UUID prefix to fileName, so we match by checking if fileName ends with original name
+    const uploadedFile = allResources.value.find(resource => 
+      resource.fileName.endsWith(file.name) || resource.name === file.name
+    )
+    console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
+    
+    if (uploadedFile) {
+      if (!testFiles.value[evaluationId]) {
+        testFiles.value[evaluationId] = {}
+      }
+      testFiles.value[evaluationId].statement = uploadedFile
+      saveTestFilesToStorage()
+      console.log('Saved to storage, current testFiles:', testFiles.value)
+    } else {
+      console.error('Could not find uploaded file in resources!')
+    }
+    
+    // Clear the input and reset evaluation ID
+    if (testStatementInput.value) {
+      testStatementInput.value.value = ''
+    }
+    currentUploadEvaluationId.value = null
+    console.log('Test statement uploaded successfully for evaluation:', evaluationId)
+  } catch (error) {
+    console.error('Error uploading test statement:', error)
+    currentUploadEvaluationId.value = null
+  }
+}
+
+const handleTestCorrectionUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file || !curricularUnit.value?.id || !currentUploadEvaluationId.value) {
+    console.log('No file selected, no curricular unit ID, or no evaluation ID')
+    return
+  }
+  
+  const evaluationId = currentUploadEvaluationId.value
+  
+  try {
+    console.log('Uploading test correction for evaluation:', evaluationId, 'file:', file.name)
+    
+    // If there's already a test correction file for this evaluation, delete it first
+    const existingCorrection = getTestCorrection(evaluationId)
+    if (existingCorrection) {
+      await RemoteService.deleteResource(existingCorrection.id)
+    }
+    
+    const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
+    console.log('Test correction upload response:', response)
+    
+    // Reload resources first to get the new file
+    await loadResources()
+    
+    // Find the newly uploaded file and track it AFTER resources are loaded
+    // Note: Backend adds UUID prefix to fileName, so we match by checking if fileName ends with original name
+    const uploadedFile = allResources.value.find(resource => 
+      resource.fileName.endsWith(file.name) || resource.name === file.name
+    )
+    console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
+    
+    if (uploadedFile) {
+      if (!testFiles.value[evaluationId]) {
+        testFiles.value[evaluationId] = {}
+      }
+      testFiles.value[evaluationId].correction = uploadedFile
+      console.log('Tracked correction file for evaluation:', evaluationId, uploadedFile)
+      saveTestFilesToStorage()
+      console.log('Saved to storage, current testFiles:', testFiles.value)
+    } else {
+      console.error('Could not find uploaded file in resources!')
+    }
+    
+    // Clear the input and reset evaluation ID
+    if (testCorrectionInput.value) {
+      testCorrectionInput.value.value = ''
+    }
+    currentUploadEvaluationId.value = null
+    console.log('Test correction uploaded successfully for evaluation:', evaluationId)
+  } catch (error) {
+    console.error('Error uploading test correction:', error)
+    currentUploadEvaluationId.value = null
   }
 }
 
@@ -675,3 +922,9 @@ watch(() => props.curricularUnit, async (newCU) => {
   }
 }, { immediate: true })
 </script>
+
+<style scoped>
+.test-file-actions {
+  white-space: nowrap;
+}
+</style>

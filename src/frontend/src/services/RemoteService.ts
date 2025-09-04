@@ -171,6 +171,44 @@ export default class RemoteServices {
     }
   }
 
+  // File upload and download methods
+  static async uploadFile(curricularUnitId: number, file: File, resourceType: 'MATERIAL' | 'SUBMISSION'): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('resourceType', resourceType)
+
+    return httpClient.post(`/resources/curricular-unit/${curricularUnitId}/upload`, formData, {
+      transformRequest: [(data, headers) => {
+        delete headers['Content-Type'];
+        return data;
+      }]
+    })
+  }
+
+  static async getMaterials(curricularUnitId: number): Promise<any[]> {
+    return httpClient.get(`/resources/curricular-unit/${curricularUnitId}/type/MATERIAL`)
+  }
+
+  static async getSubmissions(curricularUnitId: number): Promise<any[]> {
+    return httpClient.get(`/resources/curricular-unit/${curricularUnitId}/type/SUBMISSION`)
+  }
+
+  static async downloadFile(resourceId: number): Promise<AxiosResponse<ArrayBuffer>> {
+    // Create a separate axios instance to bypass the response interceptor
+    const downloadClient = axios.create({
+      timeout: 50000,
+      baseURL: import.meta.env.VITE_ROOT_API
+    })
+    
+    return downloadClient.get(`/resources/${resourceId}/download`, { 
+      responseType: 'arraybuffer'
+    })
+  }
+
+  static async deleteResource(resourceId: number): Promise<void> {
+    return httpClient.delete(`/resources/${resourceId}`)
+  }
+
   static async handleError(error: any): Promise<never> {
     const deiErr = new DeiError(
       await RemoteServices.errorMessage(error),

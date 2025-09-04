@@ -50,6 +50,7 @@
           <v-tab>Professores</v-tab>
           <v-tab>Alunos</v-tab>
           <v-tab>Avaliações</v-tab>
+          <v-tab>Recursos</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab">
@@ -183,6 +184,58 @@
               </template>
             </v-data-table>
           </v-tabs-window-item>
+          <!-- Resources Tab -->
+          <v-tabs-window-item>
+            <!-- Upload File Buttons (Only for Teachers) -->
+            <div v-if="canGradeEvaluations" class="mb-4 d-flex justify-end">
+              <input
+                ref="fileInput"
+                type="file"
+                style="display: none"
+                @change="handleFileUpload"
+                accept=".pdf"
+              />
+              <v-btn 
+                color="primary" 
+                prepend-icon="mdi-upload"
+                @click="triggerFileUpload"
+              >
+                Carregar Material
+              </v-btn>
+            </div>
+
+            <v-data-table
+              :headers="resourceHeaders"
+              :items="allResources"
+              class="mt-4"
+              no-data-text="Sem recursos a apresentar."
+              :loading="loadingResources"
+            >
+              <template v-slot:[`item.fileSize`]="{ item }">
+                {{ formatFileSize(item.fileSize) }}
+              </template>
+              <template v-slot:[`item.uploadDate`]="{ item }">
+                {{ formatDate(item.uploadDate) }}
+              </template>
+              <template v-slot:[`item.actions`]="{ item }">
+                <v-btn
+                  icon="mdi-download"
+                  variant="text"
+                  size="small"
+                  @click="downloadResource(item)"
+                  title="Descarregar"
+                ></v-btn>
+                <v-btn
+                  v-if="canGradeEvaluations"
+                  icon="mdi-delete"
+                  variant="text"
+                  size="small"
+                  @click="confirmDeleteResource(item)"
+                  title="Eliminar"
+                ></v-btn>
+              </template>
+            </v-data-table>
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-card-text>
     </v-card>
@@ -231,6 +284,21 @@
     warning-message="Esta ação eliminará permanentemente o teste e todas as notas associadas."
     @confirm="deleteTest"
   />
+
+  <!-- Delete Resource Confirmation Dialog -->
+  <ConfirmDeleteDialog
+    v-model="showDeleteResourceDialog"
+    title="Eliminar Recurso"
+    :message="`Tem a certeza de que deseja eliminar o arquivo '${resourceToDelete?.name}'?`"
+    item-type="recurso"
+    :item-name="resourceToDelete?.name"
+    :item-subtitle="`${formatFileSize(resourceToDelete?.fileSize || 0)}`"
+    icon="mdi-file-outline"
+    icon-color="orange"
+    confirm-text="Eliminar Recurso"
+    warning-message="Esta ação eliminará permanentemente o arquivo."
+    @confirm="deleteResource"
+  />
   
 </template>
 
@@ -238,6 +306,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
 import TestDto from '../../models/TestDto'
+import ResourceDto from '../../models/ResourceDto'
 import RemoteService from '../../services/RemoteService'
 import { useRoleStore } from '../../stores/role'
 import AddPeopleDialog from './ManagePeopleDialog.vue'
@@ -262,6 +331,7 @@ const props = defineProps({
 const showAddPeopleDialog = ref(false)
 const addPeopleInitialTab = ref(0) // 0 for Teachers, 1 for Students
 const selectedCurricularUnit = ref<CurricularUnitDto>()
+const fileInput = ref<HTMLInputElement>()
 
 const activeTab = ref(0)
 const roleStore = useRoleStore()
@@ -273,6 +343,10 @@ const showCreateTestDialog = ref(false)
 const showEvaluationDetailsDialog = ref(false)
 const selectedEvaluation = ref<TestDto | undefined>()
 
+// Resources data
+const allResources = ref<ResourceDto[]>([])
+const loadingResources = ref(false)
+
 // Edit dialog
 const showEditTestDialog = ref(false)
 const selectedEvaluationForEdit = ref<TestDto | undefined>()
@@ -280,6 +354,10 @@ const selectedEvaluationForEdit = ref<TestDto | undefined>()
 // Delete confirmation dialog
 const showDeleteDialog = ref(false)
 const testToDelete = ref<TestDto | null>(null)
+
+// Delete resource confirmation dialog
+const showDeleteResourceDialog = ref(false)
+const resourceToDelete = ref<ResourceDto | null>(null)
 
 // Computed property that always returns the most up-to-date curricular unit
 const curricularUnit = computed(() => {
@@ -310,6 +388,13 @@ const evaluationHeaders = [
   { title: 'Tipo', key: 'type', value: 'type' },
   { title: 'Data', key: 'date', value: 'date' },
   { title: 'Peso', key: 'weight', value: 'weight' },
+  { title: 'Ações', key: 'actions', value: 'actions', sortable: false }
+]
+
+const resourceHeaders = [
+  { title: 'Nome', key: 'name', value: 'name' },
+  { title: 'Tamanho', key: 'fileSize', value: 'fileSize' },
+  { title: 'Data', key: 'uploadDate', value: 'uploadDate' },
   { title: 'Ações', key: 'actions', value: 'actions', sortable: false }
 ]
 
@@ -387,6 +472,14 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('pt-PT')
 }
 
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
 // Evaluation management functions
 const loadEvaluations = async () => {
   if (!curricularUnit.value?.id) return
@@ -435,6 +528,110 @@ const deleteTest = async () => {
   }
 }
 
+// Resource management functions
+const loadResources = async () => {
+  if (!curricularUnit.value?.id) {
+    console.log('No curricular unit ID available for loading resources')
+    return
+  }
+  
+  loadingResources.value = true
+  try {
+    console.log('Loading resources for curricular unit:', curricularUnit.value.id)
+    // Only load materials since students won't upload submissions here
+    const materials = await RemoteService.getMaterials(curricularUnit.value.id)
+    console.log('Loaded materials:', materials)
+    allResources.value = materials
+    console.log('Resources updated in component:', allResources.value)
+  } catch (error) {
+    console.error('Error loading resources:', error)
+  } finally {
+    loadingResources.value = false
+  }
+}
+
+const triggerFileUpload = () => {
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file || !curricularUnit.value?.id) {
+    console.log('No file selected or no curricular unit ID')
+    return
+  }
+  
+  try {
+    console.log('Uploading file:', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type)
+    console.log('Curricular Unit ID:', curricularUnit.value.id)
+    
+    const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
+    console.log('Upload response:', response)
+    
+    await loadResources() // Refresh the list
+    console.log('Resources reloaded after upload')
+    
+    // Clear the input
+    if (fileInput.value) {
+      fileInput.value.value = ''
+    }
+    console.log('File uploaded successfully')
+  } catch (error) {
+    console.error('Error uploading file:', error)
+  }
+}
+
+const downloadResource = async (resource: ResourceDto) => {
+  try {
+    const response = await RemoteService.downloadFile(resource.id)
+    
+    // Check if response has data
+    if (!response.data || response.data.byteLength === 0) {
+      console.error('Empty file response')
+      return
+    }
+    
+    // Create blob from arraybuffer with proper content type
+    const blob = new Blob([response.data], { type: 'application/octet-stream' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = resource.fileName || resource.name // Use fileName from backend
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    console.log('File downloaded successfully')
+  } catch (error) {
+    console.error('Error downloading file:', error)
+  }
+}
+
+const confirmDeleteResource = (resource: ResourceDto) => {
+  resourceToDelete.value = resource
+  showDeleteResourceDialog.value = true
+}
+
+const deleteResource = async () => {
+  if (!resourceToDelete.value?.id) return
+  
+  try {
+    await RemoteService.deleteResource(resourceToDelete.value.id)
+    
+    // Refresh resources list
+    await loadResources()
+    
+    // Reset and close dialog
+    resourceToDelete.value = null
+    showDeleteResourceDialog.value = false
+  } catch (error) {
+    console.error('Error deleting resource:', error)
+  }
+}
+
 // Methods for opening AddPeopleDialog with correct tab
 const openAddTeachersDialog = () => {
   addPeopleInitialTab.value = 0 // Teachers tab
@@ -462,10 +659,11 @@ const handleCurricularUnitUpdated = (updatedCU: CurricularUnitDto) => {
   })
 }
 
-// Watch for curricular unit changes to load evaluations
+// Watch for curricular unit changes to load evaluations and resources
 watch(() => curricularUnit.value, async (newCU) => {
   if (newCU) {
     await loadEvaluations()
+    await loadResources()
   }
 }, { immediate: true })
 
@@ -473,6 +671,7 @@ watch(() => curricularUnit.value, async (newCU) => {
 watch(() => props.curricularUnit, async (newCU) => {
   if (newCU && !selectedCurricularUnit.value) {
     await loadEvaluations()
+    await loadResources()
   }
 }, { immediate: true })
 </script>

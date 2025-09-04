@@ -1,21 +1,24 @@
 <template>
-  <v-dialog v-model="localDialog" max-width="500">
-    <v-card prepend-icon="mdi-clipboard-plus" title="Criar Teste">
+  <v-dialog v-model="localDialog" max-width="600">
+    <v-card prepend-icon="mdi-pencil" title="Editar Teste">
       <v-card-text>
-        <v-form ref="testForm">
+        <v-form ref="form" v-model="valid">
           <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model="newTest.title"
+                v-model="editedTest.title"
                 label="Título do Teste"
                 :rules="[v => !!v || 'Título é obrigatório']"
                 required
                 variant="outlined"
               ></v-text-field>
             </v-col>
+          </v-row>
+
+          <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model="newTest.date"
+                v-model="editedTest.date"
                 label="Data do Teste"
                 type="datetime-local"
                 :rules="[v => !!v || 'Data é obrigatória']"
@@ -23,24 +26,26 @@
                 variant="outlined"
               ></v-text-field>
             </v-col>
+          </v-row>
+
+          <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model.number="newTest.weight"
+                v-model.number="editedTest.weight"
                 label="Peso (%)"
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
-                :rules="[
-                  v => v !== null && v !== undefined && v !== '' || 'Peso é obrigatório',
-                  v => v >= 0 && v <= 100 || 'Peso deve estar entre 0 e 100%'
-                ]"
+                :rules="weightRules"
                 required
-                suffix="%"
                 variant="outlined"
+                suffix="%"
               ></v-text-field>
             </v-col>
           </v-row>
+
+
         </v-form>
       </v-card-text>
 
@@ -51,10 +56,10 @@
         <v-btn text="Cancelar" variant="plain" @click="cancel"></v-btn>
         <v-btn 
           color="primary" 
-          text="Criar" 
-          @click="create" 
+          text="Guardar Alterações" 
+          @click="saveTest"
           :loading="loading"
-          :disabled="!isFormValid"
+          :disabled="!valid"
         ></v-btn>
       </v-card-actions>
     </v-card>
@@ -63,24 +68,28 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import TestDto from '../../../models/TestDto'
 import RemoteService from '../../../services/RemoteService'
 
-const emit = defineEmits(['update:modelValue', 'test-created'])
+const emit = defineEmits(['update:modelValue', 'test-updated'])
 
 const props = defineProps({
+  test: {
+    type: Object as () => TestDto | undefined,
+    default: undefined
+  },
   modelValue: {
     type: Boolean,
     default: false
-  },
-  curricularUnitId: {
-    type: Number,
-    required: true
   }
 })
 
-const testForm = ref()
+const form = ref()
+const valid = ref(false)
 const loading = ref(false)
-const newTest = ref({
+
+const editedTest = ref({
+  id: 0,
   title: '',
   date: '',
   weight: 0
@@ -91,50 +100,64 @@ const localDialog = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const isFormValid = computed(() => {
-  return newTest.value.title.trim() !== '' &&
-         newTest.value.date !== '' &&
-         newTest.value.weight >= 0 &&
-         newTest.value.weight <= 100
-})
+// Validation rules for weight
+const weightRules = [
+  (v: number) => v !== null && v !== undefined || 'Peso é obrigatório',
+  (v: number) => (v >= 0 && v <= 100) || 'Peso deve estar entre 0 e 100%',
+]
 
-const resetForm = () => {
-  newTest.value = {
-    title: '',
-    date: '',
-    weight: 0
+// Watch for test prop changes to populate form
+watch(() => props.test, (newTest) => {
+  if (newTest) {
+    editedTest.value = {
+      id: newTest.id || 0,
+      title: newTest.title || '',
+      date: newTest.date || '',
+      weight: (newTest.weight || 0) * 100 // Convert from decimal to percentage
+    }
   }
-  if (testForm.value) {
-    testForm.value.resetValidation()
-  }
-}
+}, { immediate: true })
 
 const cancel = () => {
   localDialog.value = false
   resetForm()
 }
 
-const create = async () => {
-  if (!testForm.value?.validate()) {
-    return
+const resetForm = () => {
+  if (form.value) {
+    form.value.reset()
   }
+  editedTest.value = {
+    id: 0,
+    title: '',
+    date: '',
+    weight: 0
+  }
+}
+
+const saveTest = async () => {
+  if (!form.value || !await form.value.validate()) return
 
   loading.value = true
+  
+  // Prepare test data for API (convert percentage back to decimal)
+  const testData = {
+    id: editedTest.value.id,
+    title: editedTest.value.title,
+    date: editedTest.value.date,
+    weight: editedTest.value.weight / 100 // Convert percentage to decimal
+  }
+
   try {
-    const testData = {
-      title: newTest.value.title,
-      date: newTest.value.date,
-      weight: newTest.value.weight / 100 // Convert percentage to decimal
-    }
+    await RemoteService.updateTest(testData.id, testData)
     
-    await RemoteService.createTest(props.curricularUnitId, testData)
-    emit('test-created')
+    emit('test-updated')
     localDialog.value = false
     resetForm()
   } catch (error: any) {
     // Error is already handled by the interceptor and shown to user
     // Just catch it to prevent uncaught promise warning
-    console.log('Test creation failed:', error.message)
+    console.log('Test update failed:', error.message)
   } finally {
     loading.value = false
   }

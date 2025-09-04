@@ -1,8 +1,8 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
-import { useAppearanceStore } from '@/stores/appearance'
-import DeiError from '@/models/DeiError'
-import type PersonDto from '@/models/PersonDto'
+import { useAppearanceStore } from '../stores/appearance'
+import DeiError from '../models/DeiError'
+import type PersonDto from '../models/PersonDto'
 import type CourseDto from '@/models/CourseDto'
 import type CurricularUnitDto from '@/models/CurricularUnitDto'
 

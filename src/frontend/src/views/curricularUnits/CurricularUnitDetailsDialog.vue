@@ -164,6 +164,14 @@
                   @click="openEvaluationDetails(item)"
                   title="Atribuir Notas"
                 ></v-btn>
+                <v-btn
+                  v-if="canManageEvaluations"
+                  icon="mdi-pencil"
+                  variant="text"
+                  size="small"
+                  @click="openEditTestDialog(item)"
+                  title="Editar"
+                ></v-btn>
                 <v-btn 
                   v-if="canManageEvaluations"
                   icon="mdi-delete"
@@ -202,6 +210,13 @@
     :evaluation="selectedEvaluation"
   />
 
+  <!-- Edit Test Dialog -->
+  <EditTestDialog
+    v-model="showEditTestDialog"
+    :test="selectedEvaluationForEdit"
+    @test-updated="loadEvaluations"
+  />
+
   <!-- Delete Test Confirmation Dialog -->
   <ConfirmDeleteDialog
     v-model="showDeleteDialog"
@@ -228,6 +243,7 @@ import { useRoleStore } from '../../stores/role'
 import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CreateTestDialog from './evaluations/CreateTestDialog.vue'
 import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
+import EditTestDialog from './evaluations/EditTestDialog.vue'
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 
 const emit = defineEmits(['update:modelValue', 'curricular-unit-updated'])
@@ -256,6 +272,10 @@ const loadingEvaluations = ref(false)
 const showCreateTestDialog = ref(false)
 const showEvaluationDetailsDialog = ref(false)
 const selectedEvaluation = ref<TestDto | undefined>()
+
+// Edit dialog
+const showEditTestDialog = ref(false)
+const selectedEvaluationForEdit = ref<TestDto | undefined>()
 
 // Delete confirmation dialog
 const showDeleteDialog = ref(false)
@@ -385,6 +405,11 @@ const loadEvaluations = async () => {
 const openEvaluationDetails = (evaluation: TestDto) => {
   selectedEvaluation.value = evaluation
   showEvaluationDetailsDialog.value = true
+}
+
+const openEditTestDialog = (evaluation: TestDto) => {
+  selectedEvaluationForEdit.value = evaluation
+  showEditTestDialog.value = true
 }
 
 const confirmDeleteTest = (evaluation: TestDto) => {

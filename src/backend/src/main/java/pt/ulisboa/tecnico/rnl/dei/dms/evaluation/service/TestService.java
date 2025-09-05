@@ -3,6 +3,8 @@ package pt.ulisboa.tecnico.rnl.dei.dms.evaluation.service;
 import java.util.List;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,9 @@ import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository.CurricularUnitRe
 @Service
 @Transactional
 public class TestService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private TestRepository testRepository;
@@ -116,8 +121,14 @@ public class TestService {
 
     @Transactional
     public void deleteTest(long id) {
-        fetchTestOrThrow(id); // ensure exists
-        testRepository.deleteById(id);
+        Test test = fetchTestOrThrow(id);
+        
+        // Since Test extends Evaluation with JOINED inheritance strategy,
+        // we need to delete from both tables. The easiest way is to use
+        // EntityManager to merge and remove the entity, ensuring both
+        // the child (Test) and parent (Evaluation) records are deleted.
+        test = entityManager.merge(test);
+        entityManager.remove(test);
     }
 
     @Transactional

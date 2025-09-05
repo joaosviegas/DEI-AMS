@@ -356,16 +356,15 @@
   <!-- Delete Test Confirmation Dialog -->
   <ConfirmDeleteDialog
     v-model="showDeleteDialog"
-    title="Eliminar Teste"
-    :message="`Tem a certeza de que deseja eliminar o teste '${testToDelete?.title}'?`"
-    item-type="teste"
-    :item-name="testToDelete?.title"
-    :item-subtitle="`${formatDate(testToDelete?.date || '')} • Peso: ${(testToDelete?.weight || 0) * 100}%`"
+    :title="`Eliminar ${evaluationToDelete?.type === 'TEST' ? 'Teste' : 'Projeto'}`"
+    :message="`Tem a certeza de que deseja eliminar ${evaluationToDelete?.type === 'TEST' ? 'o teste' : 'o projeto'} '${evaluationToDelete?.title}'?`"
+    :item-name="evaluationToDelete?.title"
+    :item-subtitle="`${formatDate(evaluationToDelete?.date || '')} • Peso: ${(evaluationToDelete?.weight || 0) * 100}%`"
     icon="mdi-file-document-outline"
     icon-color="green"
-    confirm-text="Eliminar Teste"
-    warning-message="Esta ação eliminará permanentemente o teste e todas as notas associadas."
-    @confirm="deleteTest"
+    :confirm-text="`Eliminar ${evaluationToDelete?.type === 'TEST' ? 'Teste' : 'Projeto'}`"
+    warning-message="Esta ação eliminará permanentemente a avaliação e todas as notas associadas."
+    @confirm="deleteEvaluation"
   />
 
   <!-- Delete Resource Confirmation Dialog -->
@@ -445,7 +444,7 @@ const selectedEvaluationForEdit = ref<TestDto | undefined>()
 
 // Delete confirmation dialog
 const showDeleteDialog = ref(false)
-const testToDelete = ref<TestDto | null>(null)
+const evaluationToDelete = ref<TestDto | ProjectDto | null>(null)
 
 // Delete resource confirmation dialog
 const showDeleteResourceDialog = ref(false)
@@ -623,25 +622,29 @@ const openEditTestDialog = (evaluation: TestDto) => {
   showEditTestDialog.value = true
 }
 
-const confirmDeleteTest = (evaluation: TestDto) => {
-  testToDelete.value = evaluation
+const confirmDeleteTest = (evaluation: TestDto | ProjectDto) => {
+  evaluationToDelete.value = evaluation
   showDeleteDialog.value = true
 }
 
-const deleteTest = async () => {
-  if (!testToDelete.value?.id) return
+const deleteEvaluation = async () => {
+  if (!evaluationToDelete.value?.id) return
   
   try {
-    await RemoteService.deleteTest(testToDelete.value.id)
+    if (evaluationToDelete.value.type === 'TEST') {
+      await RemoteService.deleteTest(evaluationToDelete.value.id)
+    } else {
+      await RemoteService.deleteProject(evaluationToDelete.value.id)
+    }
     
     // Refresh evaluations list
     await loadEvaluations()
     
     // Reset and close dialog
-    testToDelete.value = null
+    evaluationToDelete.value = null
     showDeleteDialog.value = false
   } catch (error) {
-    console.error('Error deleting test:', error)
+    console.error('Error deleting evaluation:', error)
   }
 }
 

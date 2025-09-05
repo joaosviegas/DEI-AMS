@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,9 @@ import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
 @Service
 @Transactional
 public class ProjectService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -143,7 +148,13 @@ public class ProjectService {
     @Transactional
     public void deleteProject(long id) {
         Project project = fetchProjectOrThrow(id);
-        projectRepository.delete(project);
+        
+        // Since Project extends Evaluation with JOINED inheritance strategy,
+        // we need to delete from both tables. The easiest way is to use
+        // EntityManager to merge and remove the entity, ensuring both
+        // the child (Project) and parent (Evaluation) records are deleted.
+        project = entityManager.merge(project);
+        entityManager.remove(project);
     }
 
     // Group management

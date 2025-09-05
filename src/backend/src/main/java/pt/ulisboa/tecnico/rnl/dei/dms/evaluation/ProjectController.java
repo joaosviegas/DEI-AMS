@@ -43,13 +43,12 @@ public class ProjectController {
     public ProjectDto createProject(
             @PathVariable long curricularUnitId,
             @RequestParam String title,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date,
             @RequestParam Double weight,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime submissionDeadline,
             @RequestParam String description,
             @RequestParam(required = false) Integer maxGroupSize
             ) {
-        return projectService.createProject(curricularUnitId, title, date, weight,
+        return projectService.createProject(curricularUnitId, title, weight,
                 submissionDeadline, description, maxGroupSize);
     }
 
@@ -57,14 +56,13 @@ public class ProjectController {
     public ProjectDto updateProject(
             @PathVariable long id,
             @RequestParam String title,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date,
             @RequestParam Double weight,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime submissionDeadline,
             @RequestParam String description,
             @RequestParam(required = false) String allowedExtensions,
             @RequestParam(required = false) Long maxFileSize) {
         
-        return projectService.updateProject(id, title, date, weight, submissionDeadline, 
+        return projectService.updateProject(id, title, weight, submissionDeadline, 
                                           description, allowedExtensions, maxFileSize);
     }
 

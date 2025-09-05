@@ -82,7 +82,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectDto createProject(long curricularUnitId, String title, LocalDateTime date, 
+    public ProjectDto createProject(long curricularUnitId, String title, 
                                   Double weight, LocalDateTime submissionDeadline, String description,
                                   Integer maxGroupSize) {
         CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
@@ -92,23 +92,19 @@ public class ProjectService {
             throw new DEIException(ErrorMessage.TEST_WEIGHT_NOT_VALID, Double.toString(weight));
         }
         
-        // Validate dates
-        if (date.isBefore(LocalDateTime.now())) {
-            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Project date cannot be in the past");
-        }
-        
-        if (submissionDeadline.isAfter(date)) {
-            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Submission deadline cannot be after evaluation date");
+        // Validate submission deadline
+        if (submissionDeadline.isBefore(LocalDateTime.now())) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Submission deadline cannot be in the past");
         }
 
         Project project;
         if (maxGroupSize != null && maxGroupSize > 1) {
             // Group project
-            project = new Project(title, date, weight, curricularUnit, submissionDeadline, 
+            project = new Project(title, weight, curricularUnit, submissionDeadline, 
                                 description, maxGroupSize);
         } else {
             // Individual project
-            project = new Project(title, date, weight, curricularUnit, submissionDeadline, description);
+            project = new Project(title, weight, curricularUnit, submissionDeadline, description);
         }
 
         project = projectRepository.save(project);
@@ -122,7 +118,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectDto updateProject(long id, String title, LocalDateTime date, Double weight,
+    public ProjectDto updateProject(long id, String title, Double weight,
                                   LocalDateTime submissionDeadline, String description, String allowedExtensions,
                                   Long maxFileSize) {
         Project project = fetchProjectOrThrow(id);
@@ -133,7 +129,7 @@ public class ProjectService {
         }
 
         project.setTitle(title);
-        project.setDate(date);
+        project.setDate(submissionDeadline); // Set evaluation date = submission deadline
         project.setWeight(weight);
         project.setSubmissionDeadline(submissionDeadline);
         project.setDescription(description);

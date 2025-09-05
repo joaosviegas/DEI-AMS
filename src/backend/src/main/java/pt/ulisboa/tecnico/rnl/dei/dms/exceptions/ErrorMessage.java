@@ -45,7 +45,16 @@ public enum ErrorMessage {
 
 	// File errors
 	EMPTY_REQUIRED_FIELD("O campo %s é obrigatório.", 7001),
-	RESOURCE_NOT_FOUND("Não foi possível encontrar o recurso %s.", 7002);
+	RESOURCE_NOT_FOUND("Não foi possível encontrar o recurso %s.", 7002),
+
+	// Project and Submission errors
+	SUBMISSION_DEADLINE_EXCEEDED("O prazo de submissão já expirou.", 8001),
+	FILE_SIZE_EXCEEDED("O tamanho do arquivo excede o limite de %s bytes.", 8002),
+	INVALID_FILE_EXTENSION("A extensão do arquivo %s não é permitida.", 8003),
+	STUDENT_NOT_IN_GROUP("O estudante não pertence a nenhum grupo para este projeto.", 8004),
+	SUBMISSION_NOT_FOUND("Não foi possível encontrar a submissão especificada.", 8005),
+	INVALID_GRADE("A nota especificada não é válida: %s.", 8006),
+	INVALID_WEIGHT("O peso especificado não é válido: %s.", 8008);
 
 	private final String label;
 	private final int code;

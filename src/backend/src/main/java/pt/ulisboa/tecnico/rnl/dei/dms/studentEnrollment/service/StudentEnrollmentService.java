@@ -15,6 +15,7 @@ import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository.CurricularUnitRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.service.ProjectService;
 
 // Service class for managing StudentEnrollment entities
 @Service
@@ -29,6 +30,9 @@ public class StudentEnrollmentService {
 
     @Autowired
     private CurricularUnitRepository curricularUnitRepository;
+
+    @Autowired
+    private ProjectService projectService;
 
     private StudentEnrollment fetchStudentEnrollmentOrThrow(long id) {
         return studentEnrollmentRepository.findById(id)
@@ -88,12 +92,19 @@ public class StudentEnrollmentService {
         
         StudentEnrollment savedEnrollment = studentEnrollmentRepository.save(enrollment);
         
+        // If the student is successfully enrolled and active, integrate them into existing project groups
+        if (enrollmentStatus == StudentEnrollment.EnrollmentStatus.ENROLLED) {
+            projectService.integrateNewStudentIntoGroups(curricularUnitId, studentId);
+        }
+        
         return new StudentEnrollmentDto(savedEnrollment);
     }
 
     @Transactional
     public StudentEnrollmentDto updateEnrollmentStatus(long enrollmentId, String status, String reason) {
         StudentEnrollment enrollment = fetchStudentEnrollmentOrThrow(enrollmentId);
+
+        StudentEnrollment.EnrollmentStatus oldStatus = enrollment.getStatus();
 
         StudentEnrollment.EnrollmentStatus enrollmentStatus;
         try {
@@ -103,7 +114,18 @@ public class StudentEnrollmentService {
         }
 
         enrollment.updateStatus(enrollmentStatus);
-        return new StudentEnrollmentDto(studentEnrollmentRepository.save(enrollment));
+        StudentEnrollment savedEnrollment = studentEnrollmentRepository.save(enrollment);
+        
+        // If the student just became enrolled (wasn't enrolled before), integrate them into project groups
+        if (oldStatus != StudentEnrollment.EnrollmentStatus.ENROLLED && 
+            enrollmentStatus == StudentEnrollment.EnrollmentStatus.ENROLLED) {
+            projectService.integrateNewStudentIntoGroups(
+                enrollment.getCurricularUnit().getId(), 
+                enrollment.getStudent().getId()
+            );
+        }
+        
+        return new StudentEnrollmentDto(savedEnrollment);
     }
 
     @Transactional

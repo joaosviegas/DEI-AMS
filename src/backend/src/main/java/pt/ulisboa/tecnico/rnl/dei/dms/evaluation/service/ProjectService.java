@@ -15,6 +15,7 @@ import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Project;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectGroup;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectMember;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectSubmission;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectGroupDto;
@@ -173,26 +174,43 @@ public class ProjectService {
                 .map(StudentEnrollment::getStudent)
                 .toList();
         
+        if (students.isEmpty()) {
+            return; // No students to assign to groups
+        }
+        
         // Shuffle students for random assignment
         List<Person> shuffledStudents = new ArrayList<>(students);
         Collections.shuffle(shuffledStudents);
         
         int maxGroupSize = project.getMaxGroupSize();
+        int totalStudents = shuffledStudents.size();
         int groupNumber = 1;
+        int studentIndex = 0;
         
-        for (int i = 0; i < shuffledStudents.size(); i += maxGroupSize) {
-            ProjectGroup group = new ProjectGroup(project, "Group " + groupNumber);
+        // Create groups and distribute all students
+        while (studentIndex < totalStudents) {
+            ProjectGroup group = new ProjectGroup(project, "Grupo " + groupNumber);
             group = projectGroupRepository.save(group);
             
+            // Calculate how many students to add to this group
+            int studentsLeftToAssign = totalStudents - studentIndex;
+            int studentsForThisGroup = Math.min(maxGroupSize, studentsLeftToAssign);
+            
             // Add students to this group
-            int endIndex = Math.min(i + maxGroupSize, shuffledStudents.size());
-            for (int j = i; j < endIndex; j++) {
-                group.addMember(shuffledStudents.get(j));
+            for (int i = 0; i < studentsForThisGroup; i++) {
+                Person student = shuffledStudents.get(studentIndex++);
+                ProjectMember member = new ProjectMember(group, student);
+                entityManager.persist(member);
+                group.getMembers().add(member);
             }
             
+            // Save group with all members
             projectGroupRepository.save(group);
             groupNumber++;
         }
+        
+        // Force flush to ensure all entities are persisted
+        entityManager.flush();
     }
 
     @Transactional
@@ -200,6 +218,59 @@ public class ProjectService {
         return projectGroupRepository.findByProjectIdOrderByGroupNameAsc(projectId).stream()
                 .map(ProjectGroupDto::new)
                 .toList();
+    }
+
+    @Transactional
+    public void integrateNewStudentIntoGroups(long curricularUnitId, long studentId) {
+        Person student = fetchPersonOrThrow(studentId);
+        
+        // Find all group projects for this curricular unit
+        List<Project> groupProjects = projectRepository.findByCurricularUnitIdOrderByDateAsc(curricularUnitId).stream()
+                .filter(Project::isGroupProject)
+                .filter(project -> !project.isCompleted()) // Only add to ongoing/future projects
+                .toList();
+        
+        for (Project project : groupProjects) {
+            // Check if student is already in a group for this project
+            ProjectGroup existingGroup = projectGroupRepository.findByProjectIdAndStudentId(project.getId(), studentId);
+            if (existingGroup != null) {
+                continue; // Student already in a group for this project
+            }
+            
+            // Find the smallest group to maintain balance
+            List<ProjectGroup> groups = projectGroupRepository.findByProjectIdOrderByGroupNameAsc(project.getId());
+            if (groups.isEmpty()) {
+                // No groups exist yet, create one
+                ProjectGroup newGroup = new ProjectGroup(project, "Grupo 1");
+                newGroup = projectGroupRepository.save(newGroup);
+                ProjectMember member = new ProjectMember(newGroup, student);
+                entityManager.persist(member);
+                newGroup.getMembers().add(member);
+                projectGroupRepository.save(newGroup);
+            } else {
+                // Find the group with the fewest members
+                ProjectGroup smallestGroup = groups.stream()
+                        .min((g1, g2) -> Integer.compare(g1.getMembers().size(), g2.getMembers().size()))
+                        .orElse(groups.get(0));
+                
+                // Only add if the group isn't at max capacity
+                if (smallestGroup.getMembers().size() < project.getMaxGroupSize()) {
+                    ProjectMember member = new ProjectMember(smallestGroup, student);
+                    entityManager.persist(member);
+                    smallestGroup.getMembers().add(member);
+                    projectGroupRepository.save(smallestGroup);
+                } else {
+                    // All groups are full, create a new one
+                    int nextGroupNumber = groups.size() + 1;
+                    ProjectGroup newGroup = new ProjectGroup(project, "Grupo " + nextGroupNumber);
+                    newGroup = projectGroupRepository.save(newGroup);
+                    ProjectMember member = new ProjectMember(newGroup, student);
+                    entityManager.persist(member);
+                    newGroup.getMembers().add(member);
+                    projectGroupRepository.save(newGroup);
+                }
+            }
+        }
     }
 
     @Transactional

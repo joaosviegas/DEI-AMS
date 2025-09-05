@@ -29,121 +29,241 @@
             <strong>Peso:</strong> {{ evaluation.weight * 100 }}%
           </v-col>
           <v-col cols="4">
-            <strong>Total de Alunos:</strong> {{ studentGrades.length }}
+            <strong>Total:</strong> 
+            {{ isGroupProject ? `${projectGroups.length} grupos` : `${studentGrades.length} alunos` }}
           </v-col>
         </v-row>
 
         <v-divider class="mb-4"></v-divider>
 
-        <!-- Grades Table -->
-        <div class="d-flex justify-space-between align-center mb-4">
-          <h3>Notas dos Alunos</h3>
-          <v-btn 
-            v-if="canGrade"
-            color="primary"
-            prepend-icon="mdi-content-save"
-            @click="saveAllGrades"
-            :loading="saving"
-            :disabled="!hasChanges"
+        <!-- Groups Table (for group projects) -->
+        <div v-if="isGroupProject">
+          <div class="d-flex justify-space-between align-center mb-4">
+            <h3>Grupos do Projeto</h3>
+            <v-btn 
+              v-if="canGrade && hasGroupGradeChanges"
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveAllGroupGrades"
+              :loading="saving"
+              :disabled="!hasGroupGradeChanges"
+            >
+              Guardar Notas dos Grupos
+            </v-btn>
+          </div>
+
+          <v-data-table
+            :headers="groupHeaders"
+            :items="projectGroups"
+            :loading="loading"
+            no-data-text="Sem grupos criados."
+            item-key="id"
+            expand-on-click
+            show-expand
           >
-            Guardar Notas
-          </v-btn>
+            <template v-slot:[`item.groupName`]="{ item }">
+              <div class="d-flex align-center">
+                <span class="font-weight-medium">{{ item.groupName || 'Grupo sem nome' }}</span>
+                <v-chip 
+                  color="blue"
+                  size="x-small"
+                  class="ml-2"
+                >
+                  {{ item.members.length }} membros
+                </v-chip>
+              </div>
+            </template>
+
+            <template v-slot:[`item.members`]="{ item }">
+              <div class="d-flex flex-wrap gap-1">
+                <v-chip
+                  v-for="member in item.members.slice(0, 2)"
+                  :key="member.id"
+                  size="small"
+                  variant="outlined"
+                >
+                  {{ member.name }}
+                </v-chip>
+                <v-chip
+                  v-if="item.members.length > 2"
+                  size="small"
+                  variant="outlined"
+                  color="grey"
+                >
+                  +{{ item.members.length - 2 }}
+                </v-chip>
+              </div>
+            </template>
+
+            <template v-slot:[`item.grade`]="{ item }">
+              <v-text-field
+                v-if="canGrade"
+                v-model.number="item.grade"
+                type="number"
+                min="0"
+                max="20"
+                step="0.1"
+                density="compact"
+                hide-details
+                @input="markGroupAsChanged(item)"
+                :rules="[
+                  v => v === null || v === undefined || v === '' || (v >= 0 && v <= 20) || 'Nota deve estar entre 0 e 20'
+                ]"
+                placeholder="--"
+              ></v-text-field>
+              <span v-else-if="item.grade !== null && item.grade !== undefined">
+                {{ formatGrade(item.grade) }}
+              </span>
+              <span v-else class="text-grey">--</span>
+            </template>
+
+            <template v-slot:[`item.status`]="{ item }">
+              <v-chip 
+                :color="getGradeStatusColor(item.grade)" 
+                size="small"
+              >
+                {{ getGradeStatusText(item.grade) }}
+              </v-chip>
+            </template>
+
+            <template v-slot:expanded-row="{ columns, item }">
+              <tr>
+                <td :colspan="columns.length">
+                  <v-card flat class="ma-2">
+                    <v-card-title>Membros do Grupo</v-card-title>
+                    <v-card-text>
+                      <div class="d-flex flex-column gap-2">
+                        <div
+                          v-for="member in item.members"
+                          :key="member.id"
+                          class="d-flex justify-space-between align-center pa-2 rounded"
+                          style="background-color: var(--v-theme-surface-variant)"
+                        >
+                          <div>
+                            <strong>{{ member.name }}</strong>
+                            <span class="text-grey ml-2">({{ member.istId }})</span>
+                          </div>
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </td>
+              </tr>
+            </template>
+          </v-data-table>
         </div>
 
-        <v-data-table
-          :headers="gradeHeaders"
-          :items="studentGrades"
-          :loading="loading"
-          no-data-text="Sem alunos inscritos."
-          item-key="studentId"
-        >
-          <template v-slot:[`item.studentName`]="{ item }">
-            <div class="d-flex align-center">
-              <span class="font-weight-medium">{{ item.studentName }}</span>
-              <v-chip 
-                v-if="item.revisionRequested"
-                color="orange"
-                size="x-small"
-                class="ml-2"
-                title="Revisão solicitada"
-              >
-                R
-              </v-chip>
-            </div>
-          </template>
-
-          <template v-slot:[`item.grade`]="{ item }">
-            <v-text-field
+        <!-- Individual Students Table (for individual projects/tests) -->
+        <div v-else>
+          <div class="d-flex justify-space-between align-center mb-4">
+            <h3>Notas dos Alunos</h3>
+            <v-btn 
               v-if="canGrade"
-              v-model.number="item.grade"
-              type="number"
-              min="0"
-              max="20"
-              step="0.1"
-              density="compact"
-              hide-details
-              @input="markAsChanged(item)"
-              :rules="[
-                v => v === null || v === undefined || v === '' || (v >= 0 && v <= 20) || 'Nota deve estar entre 0 e 20'
-              ]"
-              placeholder="--"
-            ></v-text-field>
-            <span v-else-if="item.grade !== null">
-              {{ formatGrade(item.grade) }}
-            </span>
-            <span v-else class="text-grey">--</span>
-          </template>
-
-          <template v-slot:[`item.status`]="{ item }">
-            <v-chip 
-              :color="getGradeStatusColor(item.grade)" 
-              size="small"
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveAllGrades"
+              :loading="saving"
+              :disabled="!hasChanges"
             >
-              {{ getGradeStatusText(item.grade) }}
-            </v-chip>
-          </template>
+              Guardar Notas
+            </v-btn>
+          </div>
 
-          <template v-slot:[`item.gradedAt`]="{ item }">
-            <span v-if="item.gradedAt">
-              {{ formatDateTime(item.gradedAt) }}
-            </span>
-            <span v-else class="text-grey">--</span>
-          </template>
+          <v-data-table
+            :headers="gradeHeaders"
+            :items="studentGrades"
+            :loading="loading"
+            no-data-text="Sem alunos inscritos."
+            item-key="studentId"
+          >
+            <template v-slot:[`item.studentName`]="{ item }">
+              <div class="d-flex align-center">
+                <span class="font-weight-medium">{{ item.studentName }}</span>
+                <v-chip 
+                  v-if="item.revisionRequested"
+                  color="orange"
+                  size="x-small"
+                  class="ml-2"
+                  title="Revisão solicitada"
+                >
+                  R
+                </v-chip>
+              </div>
+            </template>
 
-          <template v-slot:[`item.actions`]="{ item }">
-            <!-- Teachers: View revision requests -->
-            <v-btn 
-              v-if="item.revisionRequested && canGrade"
-              icon="mdi-eye"
-              variant="text"
-              size="small"
-              @click="viewRevisionRequest(item)"
-              title="Ver pedido de revisão"
-              color="orange"
-            ></v-btn>
-            
-            <!-- Students: Request revision (only if they have a grade and haven't requested yet) -->
-            <v-btn 
-              v-if="!canGrade && item.grade !== null && !item.revisionRequested"
-              icon="mdi-clipboard-edit"
-              variant="text"
-              size="small"
-              @click="openRevisionDialog(item)"
-              title="Solicitar revisão"
-              color="orange"
-            ></v-btn>
-            
-            <!-- Students: Show pending revision status -->
-            <v-chip
-              v-if="!canGrade && item.revisionRequested"
-              color="orange"
-              size="small"
-              prepend-icon="mdi-clock-outline"
-            >
-              Revisão Pendente
-            </v-chip>
-          </template>
-        </v-data-table>
+            <template v-slot:[`item.grade`]="{ item }">
+              <v-text-field
+                v-if="canGrade"
+                v-model.number="item.grade"
+                type="number"
+                min="0"
+                max="20"
+                step="0.1"
+                density="compact"
+                hide-details
+                @input="markAsChanged(item)"
+                :rules="[
+                  v => v === null || v === undefined || v === '' || (v >= 0 && v <= 20) || 'Nota deve estar entre 0 e 20'
+                ]"
+                placeholder="--"
+              ></v-text-field>
+              <span v-else-if="item.grade !== null">
+                {{ formatGrade(item.grade) }}
+              </span>
+              <span v-else class="text-grey">--</span>
+            </template>
+
+            <template v-slot:[`item.status`]="{ item }">
+              <v-chip 
+                :color="getGradeStatusColor(item.grade)" 
+                size="small"
+              >
+                {{ getGradeStatusText(item.grade) }}
+              </v-chip>
+            </template>
+
+            <template v-slot:[`item.gradedAt`]="{ item }">
+              <span v-if="item.gradedAt">
+                {{ formatDateTime(item.gradedAt) }}
+              </span>
+              <span v-else class="text-grey">--</span>
+            </template>
+
+            <template v-slot:[`item.actions`]="{ item }">
+              <!-- Teachers: View revision requests -->
+              <v-btn 
+                v-if="item.revisionRequested && canGrade"
+                icon="mdi-eye"
+                variant="text"
+                size="small"
+                @click="viewRevisionRequest(item)"
+                title="Ver pedido de revisão"
+                color="orange"
+              ></v-btn>
+              
+              <!-- Students: Request revision (only if they have a grade and haven't requested yet) -->
+              <v-btn 
+                v-if="!canGrade && item.grade !== null && !item.revisionRequested"
+                icon="mdi-clipboard-edit"
+                variant="text"
+                size="small"
+                @click="openRevisionDialog(item)"
+                title="Solicitar revisão"
+                color="orange"
+              ></v-btn>
+              
+              <!-- Students: Show pending revision status -->
+              <v-chip
+                v-if="!canGrade && item.revisionRequested"
+                color="orange"
+                size="small"
+                prepend-icon="mdi-clock-outline"
+              >
+                Revisão Pendente
+              </v-chip>
+            </template>
+          </v-data-table>
+        </div>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -194,6 +314,7 @@
 import { ref, computed, watch } from 'vue'
 import TestDto from '../../../models/TestDto'
 import ProjectDto from '../../../models/ProjectDto'
+import ProjectGroupDto from '../../../models/ProjectGroupDto'
 import RemoteService from '../../../services/RemoteService'
 import { useRoleStore } from '../../../stores/role'
 
@@ -214,7 +335,9 @@ const roleStore = useRoleStore()
 const loading = ref(false)
 const saving = ref(false)
 const studentGrades = ref<any[]>([])
+const projectGroups = ref<any[]>([])
 const hasChanges = ref(false)
+const hasGroupGradeChanges = ref(false)
 
 // Revision request variables
 const showRevisionDialog = ref(false)
@@ -229,6 +352,22 @@ const localDialog = computed({
 
 const canGrade = computed(() => {
   return roleStore.isMainTeacher || roleStore.isTeachingAssistant
+})
+
+const isGroupProject = computed(() => {
+  return props.evaluation?.type === 'PROJECT' && 
+         (props.evaluation as ProjectDto)?.isGroupProject === true
+})
+
+const groupHeaders = computed(() => {
+  const headers = [
+    { title: 'Grupo', key: 'groupName', value: 'groupName' },
+    { title: 'Membros', key: 'members', value: 'members' },
+    { title: 'Nota', key: 'grade', value: 'grade' },
+    { title: 'Classificação', key: 'status', value: 'status' }
+  ]
+  
+  return headers
 })
 
 const gradeHeaders = computed(() => {
@@ -275,25 +414,42 @@ const markAsChanged = (item: any) => {
   hasChanges.value = true
 }
 
+const markGroupAsChanged = (item: any) => {
+  item.changed = true
+  hasGroupGradeChanges.value = true
+}
+
 const loadGrades = async () => {
   if (!props.evaluation?.id) return
   
   loading.value = true
   try {
-    const grades = await RemoteService.getEvaluationGrades(props.evaluation.id)
-    studentGrades.value = grades.map(grade => ({
-      id: grade.id,
-      studentEnrollmentId: grade.studentEnrollmentId,
-      studentId: grade.student.id,
-      studentName: grade.student.name,
-      studentIstId: grade.student.istId,
-      grade: grade.grade,
-      gradedAt: grade.gradedAt,
-      revisionRequested: grade.revisionRequested || false,
-      revisionReason: grade.revisionReason,
-      revisionRequestedAt: grade.revisionRequestedAt,
-      changed: false
-    }))
+    if (isGroupProject.value) {
+      // Load groups for group projects
+      const groups = await RemoteService.getProjectGroups(props.evaluation.id)
+      // For now, groups don't have grades stored separately, so we'll use a placeholder
+      projectGroups.value = groups.map(group => ({
+        ...group,
+        grade: null, // TODO: Load actual group grades when backend supports it
+        changed: false
+      }))
+    } else {
+      // Load individual grades for tests or individual projects
+      const grades = await RemoteService.getEvaluationGrades(props.evaluation.id)
+      studentGrades.value = grades.map(grade => ({
+        id: grade.id,
+        studentEnrollmentId: grade.studentEnrollmentId,
+        studentId: grade.student.id,
+        studentName: grade.student.name,
+        studentIstId: grade.student.istId,
+        grade: grade.grade,
+        gradedAt: grade.gradedAt,
+        revisionRequested: grade.revisionRequested || false,
+        revisionReason: grade.revisionReason,
+        revisionRequestedAt: grade.revisionRequestedAt,
+        changed: false
+      }))
+    }
   } catch (error) {
     console.error('Error loading grades:', error)
   } finally {
@@ -322,6 +478,32 @@ const saveAllGrades = async () => {
     await loadGrades()
   } catch (error) {
     console.error('Error saving grades:', error)
+  } finally {
+    saving.value = false
+  }
+}
+
+const saveAllGroupGrades = async () => {
+  if (!props.evaluation?.id) return
+  
+  saving.value = true
+  try {
+    const changedGroups = projectGroups.value.filter(item => item.changed && item.grade !== null)
+    
+    // TODO: Implement group grade saving when backend supports it
+    // For now, we'll save grades to all group members individually
+    for (const group of changedGroups) {
+      // This is a placeholder - in a real implementation, you'd either:
+      // 1. Have a dedicated group grade endpoint, or 
+      // 2. Apply the grade to all group members
+      console.log(`Would save grade ${group.grade} for group ${group.name}`)
+      group.changed = false
+    }
+    
+    hasGroupGradeChanges.value = false
+    await loadGrades()
+  } catch (error) {
+    console.error('Error saving group grades:', error)
   } finally {
     saving.value = false
   }

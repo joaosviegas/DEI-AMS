@@ -117,13 +117,20 @@
           <!-- Evaluations Tab -->
           <v-tabs-window-item>
             <!-- Create Button (Only for Main Teachers) -->
-            <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end">
+            <div v-if="canManageEvaluations" class="mb-4 d-flex justify-end gap-2">
               <v-btn
                 color="primary" 
                 prepend-icon="mdi-plus"
                 @click="showCreateTestDialog = true"
               >
                 Criar Teste
+              </v-btn>
+              <v-btn
+                color="secondary" 
+                prepend-icon="mdi-folder-plus"
+                @click="showCreateProjectDialog = true"
+              >
+                Criar Projeto
               </v-btn>
             </div>
 
@@ -326,6 +333,13 @@
     @test-created="loadEvaluations"
   />
   
+  <!-- Create Project Dialog -->
+  <CreateProjectDialog
+    v-model="showCreateProjectDialog"
+    :curricular-unit-id="curricularUnit?.id || 0"
+    @project-created="loadEvaluations"
+  />
+  
   <!-- Evaluation Details Dialog -->
   <EvaluationDetailsDialog
     v-model="showEvaluationDetailsDialog"
@@ -375,11 +389,13 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import CurricularUnitDto from '../../models/CurricularUnitDto'
 import TestDto from '../../models/TestDto'
+import ProjectDto from '../../models/ProjectDto'
 import ResourceDto from '../../models/ResourceDto'
 import RemoteService from '../../services/RemoteService'
 import { useRoleStore } from '../../stores/role'
 import AddPeopleDialog from './ManagePeopleDialog.vue'
 import CreateTestDialog from './evaluations/CreateTestDialog.vue'
+import CreateProjectDialog from './evaluations/CreateProjectDialog.vue'
 import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
 import EditTestDialog from './evaluations/EditTestDialog.vue'
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
@@ -408,11 +424,12 @@ const activeTab = ref(0)
 const roleStore = useRoleStore()
 
 // Evaluations data
-const allEvaluations = ref<TestDto[]>([])
+const allEvaluations = ref<(TestDto | ProjectDto)[]>([])
 const loadingEvaluations = ref(false)
 const showCreateTestDialog = ref(false)
+const showCreateProjectDialog = ref(false)
 const showEvaluationDetailsDialog = ref(false)
-const selectedEvaluation = ref<TestDto | undefined>()
+const selectedEvaluation = ref<TestDto | ProjectDto | undefined>()
 
 // Resources data
 const allResources = ref<ResourceDto[]>([])
@@ -576,8 +593,19 @@ const loadEvaluations = async () => {
   
   loadingEvaluations.value = true
   try {
-    const evaluations = await RemoteService.getTestsByCurricularUnit(curricularUnit.value.id)
-    allEvaluations.value = evaluations.map(TestDto.fromBackend)
+    // Load both tests and projects
+    const [tests, projects] = await Promise.all([
+      RemoteService.getTestsByCurricularUnit(curricularUnit.value.id),
+      RemoteService.getProjectsByCurricularUnit(curricularUnit.value.id)
+    ])
+    
+    const testDtos = tests.map(TestDto.fromBackend)
+    const projectDtos = projects.map(ProjectDto.fromBackend)
+    
+    // Combine and sort by date
+    allEvaluations.value = [...testDtos, ...projectDtos].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
   } catch (error) {
     console.error('Error loading evaluations:', error)
   } finally {
@@ -585,7 +613,7 @@ const loadEvaluations = async () => {
   }
 }
 
-const openEvaluationDetails = (evaluation: TestDto) => {
+const openEvaluationDetails = (evaluation: TestDto | ProjectDto) => {
   selectedEvaluation.value = evaluation
   showEvaluationDetailsDialog.value = true
 }

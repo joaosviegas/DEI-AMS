@@ -5,6 +5,9 @@ import DeiError from '../models/DeiError'
 import type PersonDto from '../models/PersonDto'
 import type CourseDto from '@/models/CourseDto'
 import type CurricularUnitDto from '@/models/CurricularUnitDto'
+import type ProjectDto from '@/models/ProjectDto'
+import type ProjectGroupDto from '@/models/ProjectGroupDto'
+import type ProjectSubmissionDto from '@/models/ProjectSubmissionDto'
 
 const httpClient = axios.create()
 httpClient.defaults.timeout = 50000
@@ -142,23 +145,117 @@ export default class RemoteServices {
     return httpClient.delete(`/tests/${testId}`)
   }
 
-  // Evaluation Grade methods
-  static async getEvaluationGrades(evaluationId: number): Promise<any[]> {
-    return httpClient.get(`/evaluation-grades/evaluation/${evaluationId}`)
+  // Project methods
+  static async getProjectsByCurricularUnit(curricularUnitId: number): Promise<ProjectDto[]> {
+    return httpClient.get(`/projects/curricular-unit/${curricularUnitId}`)
   }
 
-  static async saveEvaluationGrade(evaluationId: number, studentEnrollmentId: number, grade: number): Promise<any> {
+  static async getProject(projectId: number): Promise<ProjectDto> {
+    return httpClient.get(`/projects/${projectId}`)
+  }
+
+  static async createProject(curricularUnitId: number, project: any): Promise<ProjectDto> {
     const params = new URLSearchParams({
-      evaluationId: evaluationId.toString(),
-      studentEnrollmentId: studentEnrollmentId.toString(),
-      grade: grade.toString()
+      title: project.title,
+      weight: project.weight.toString(),
+      submissionDeadline: project.submissionDeadline,
+      description: project.description || ''
     })
-    return httpClient.post('/evaluation-grades', null, { params })
+    
+    if (project.maxGroupSize && project.maxGroupSize > 1) {
+      params.append('maxGroupSize', project.maxGroupSize.toString())
+    }
+
+    return httpClient.post(`/projects/curricular-unit/${curricularUnitId}`, null, { params })
   }
 
-  static async requestGradeRevision(gradeId: number, reason: string): Promise<any> {
-    const params = new URLSearchParams({ reason })
-    return httpClient.put(`/evaluation-grades/${gradeId}/request-revision`, null, { params })
+  static async updateProject(projectId: number, project: any): Promise<ProjectDto> {
+    const params = new URLSearchParams({
+      title: project.title,
+      weight: project.weight.toString(),
+      submissionDeadline: project.submissionDeadline,
+      description: project.description || ''
+    })
+    
+    if (project.allowedExtensions) {
+      params.append('allowedExtensions', project.allowedExtensions)
+    }
+    
+    if (project.maxFileSize) {
+      params.append('maxFileSize', project.maxFileSize.toString())
+    }
+
+    return httpClient.put(`/projects/${projectId}`, null, { params })
+  }
+
+  static async deleteProject(projectId: number): Promise<void> {
+    return httpClient.delete(`/projects/${projectId}`)
+  }
+
+  // Project group methods
+  static async getProjectGroups(projectId: number): Promise<ProjectGroupDto[]> {
+    return httpClient.get(`/projects/${projectId}/groups`)
+  }
+
+  static async getStudentGroup(projectId: number, studentId: number): Promise<ProjectGroupDto | null> {
+    try {
+      return httpClient.get(`/projects/${projectId}/groups/student/${studentId}`)
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  // Project submission methods
+  static async submitProject(projectId: number, studentId: number, file: File): Promise<ProjectSubmissionDto> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('studentId', studentId.toString())
+
+    return httpClient.post(`/projects/${projectId}/submissions`, formData, {
+      transformRequest: [(data, headers) => {
+        delete headers['Content-Type'];
+        return data;
+      }]
+    })
+  }
+
+  static async getProjectSubmissions(projectId: number): Promise<ProjectSubmissionDto[]> {
+    return httpClient.get(`/projects/${projectId}/submissions`)
+  }
+
+  static async getStudentSubmission(projectId: number, studentId: number): Promise<ProjectSubmissionDto | null> {
+    try {
+      return httpClient.get(`/projects/${projectId}/submissions/student/${studentId}`)
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  static async gradeSubmission(submissionId: number, grade: number, feedback: string = '', graderId: number): Promise<ProjectSubmissionDto> {
+    const params = new URLSearchParams({
+      grade: grade.toString(),
+      graderId: graderId.toString()
+    })
+    
+    if (feedback) {
+      params.append('feedback', feedback)
+    }
+
+    return httpClient.post(`/projects/submissions/${submissionId}/grade`, null, { params })
+  }
+
+  static async deleteSubmission(submissionId: number): Promise<void> {
+    return httpClient.delete(`/projects/submissions/${submissionId}`)
+  }
+
+  static async performAutomaticGrading(projectId: number): Promise<string> {
+    return httpClient.post(`/projects/${projectId}/auto-grade`)
   }
 
   static async errorMessage(error: any): Promise<string> {

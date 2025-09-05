@@ -245,7 +245,7 @@
                   icon="mdi-pencil"
                   variant="text"
                   size="small"
-                  @click="openEditTestDialog(item)"
+                  @click="openEditEvaluationDialog(item)"
                   title="Editar"
                   class="mr-1"
                 ></v-btn>
@@ -353,6 +353,13 @@
     @test-updated="loadEvaluations"
   />
 
+  <!-- Edit Project Dialog -->
+  <EditProjectDialog
+    v-model="showEditProjectDialog"
+    :project="selectedProjectForEdit"
+    @project-updated="loadEvaluations"
+  />
+
   <!-- Delete Test Confirmation Dialog -->
   <ConfirmDeleteDialog
     v-model="showDeleteDialog"
@@ -397,6 +404,7 @@ import CreateTestDialog from './evaluations/CreateTestDialog.vue'
 import CreateProjectDialog from './evaluations/CreateProjectDialog.vue'
 import EvaluationDetailsDialog from './evaluations/EvaluationDetailsDialog.vue'
 import EditTestDialog from './evaluations/EditTestDialog.vue'
+import EditProjectDialog from './evaluations/EditProjectDialog.vue'
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog.vue'
 
 const emit = defineEmits(['update:modelValue', 'curricular-unit-updated'])
@@ -441,6 +449,8 @@ const currentUploadEvaluationId = ref<number | null>(null)
 // Edit dialog
 const showEditTestDialog = ref(false)
 const selectedEvaluationForEdit = ref<TestDto | undefined>()
+const showEditProjectDialog = ref(false)
+const selectedProjectForEdit = ref<ProjectDto | undefined>()
 
 // Delete confirmation dialog
 const showDeleteDialog = ref(false)
@@ -616,10 +626,15 @@ const openEvaluationDetails = (evaluation: TestDto | ProjectDto) => {
   selectedEvaluation.value = evaluation
   showEvaluationDetailsDialog.value = true
 }
-
-const openEditTestDialog = (evaluation: TestDto) => {
-  selectedEvaluationForEdit.value = evaluation
-  showEditTestDialog.value = true
+// Opens the corresponding edit dialog based on evaluation type
+const openEditEvaluationDialog = (evaluation: TestDto | ProjectDto) => {
+  if (evaluation.type === 'TEST') {
+    selectedEvaluationForEdit.value = evaluation as TestDto
+    showEditTestDialog.value = true
+  } else if (evaluation.type === 'PROJECT') {
+    selectedProjectForEdit.value = evaluation as ProjectDto
+    showEditProjectDialog.value = true
+  }
 }
 
 const confirmDeleteTest = (evaluation: TestDto | ProjectDto) => {

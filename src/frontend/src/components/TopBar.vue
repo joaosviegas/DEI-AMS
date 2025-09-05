@@ -24,7 +24,7 @@ const filteredNavbarItems = computed(() => {
   const currentRole = roleStore.currentActiveRole
   
   return navbarItems.value
-    .filter(item => item.roles.includes(currentRole))
+    .filter(item => item.roles && item.roles.includes(currentRole))
     .map(({ roles, ...item }) => item)
 })
 </script>

@@ -1,0 +1,356 @@
+package pt.ulisboa.tecnico.rnl.dei.dms.evaluation.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.DEIException;
+import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Project;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectGroup;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectSubmission;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectDto;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectGroupDto;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectSubmissionDto;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectGroupRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectSubmissionRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
+import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository.CurricularUnitRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
+import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.repository.StudentEnrollmentRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
+import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
+
+/**
+ * Service class for managing Project entities and related operations
+ */
+@Service
+@Transactional
+public class ProjectService {
+
+    @Autowired
+    private ProjectRepository projectRepository;
+    
+    @Autowired
+    private ProjectGroupRepository projectGroupRepository;
+    
+    @Autowired
+    private ProjectSubmissionRepository projectSubmissionRepository;
+
+    @Autowired
+    private CurricularUnitRepository curricularUnitRepository;
+    
+    @Autowired
+    private StudentEnrollmentRepository studentEnrollmentRepository;
+    
+    @Autowired
+    private PersonRepository personRepository;
+
+    // Helper methods
+    private Project fetchProjectOrThrow(long id) {
+        return projectRepository.findById(id)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_TEST, "Project " + Long.toString(id)));
+    }
+
+    private CurricularUnit fetchCurricularUnitOrThrow(long id) {
+        return curricularUnitRepository.findById(id)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_CURRICULAR_UNIT, Long.toString(id)));
+    }
+    
+    private Person fetchPersonOrThrow(long id) {
+        return personRepository.findById(id)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_PERSON, Long.toString(id)));
+    }
+
+    // Project CRUD operations
+    @Transactional
+    public List<ProjectDto> getProjectsByCurricularUnit(long curricularUnitId) {
+        return projectRepository.findByCurricularUnitIdOrderByDateAsc(curricularUnitId).stream()
+                .map(ProjectDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public ProjectDto getProject(long id) {
+        return new ProjectDto(fetchProjectOrThrow(id));
+    }
+
+    @Transactional
+    public ProjectDto createProject(long curricularUnitId, String title, LocalDateTime date, 
+                                  Double weight, LocalDateTime submissionDeadline, String description,
+                                  Integer maxGroupSize) {
+        CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
+        
+        // Validate weight
+        if (weight < 0.0 || weight > 1.0) {
+            throw new DEIException(ErrorMessage.TEST_WEIGHT_NOT_VALID, Double.toString(weight));
+        }
+        
+        // Validate dates
+        if (date.isBefore(LocalDateTime.now())) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Project date cannot be in the past");
+        }
+        
+        if (submissionDeadline.isAfter(date)) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Submission deadline cannot be after evaluation date");
+        }
+
+        Project project;
+        if (maxGroupSize != null && maxGroupSize > 1) {
+            // Group project
+            project = new Project(title, date, weight, curricularUnit, submissionDeadline, 
+                                description, maxGroupSize);
+        } else {
+            // Individual project
+            project = new Project(title, date, weight, curricularUnit, submissionDeadline, description);
+        }
+
+        project = projectRepository.save(project);
+        
+        // If it's a group project, create groups automatically
+        if (project.isGroupProject()) {
+            createGroupsForProject(project);
+        }
+
+        return new ProjectDto(project);
+    }
+
+    @Transactional
+    public ProjectDto updateProject(long id, String title, LocalDateTime date, Double weight,
+                                  LocalDateTime submissionDeadline, String description, String allowedExtensions,
+                                  Long maxFileSize) {
+        Project project = fetchProjectOrThrow(id);
+        
+        // Validate weight
+        if (weight < 0.0 || weight > 1.0) {
+            throw new DEIException(ErrorMessage.INVALID_WEIGHT, Double.toString(weight));
+        }
+
+        project.setTitle(title);
+        project.setDate(date);
+        project.setWeight(weight);
+        project.setSubmissionDeadline(submissionDeadline);
+        project.setDescription(description);
+        project.setAllowedExtensions(allowedExtensions);
+        project.setMaxFileSize(maxFileSize);
+
+        project = projectRepository.save(project);
+        return new ProjectDto(project);
+    }
+
+    @Transactional
+    public void deleteProject(long id) {
+        Project project = fetchProjectOrThrow(id);
+        projectRepository.delete(project);
+    }
+
+    // Group management
+    @Transactional
+    public void createGroupsForProject(Project project) {
+        if (!project.isGroupProject()) {
+            return; // No groups needed for individual projects
+        }
+        
+        // Get all enrolled students for this curricular unit
+        List<StudentEnrollment> enrollments = studentEnrollmentRepository
+                .findByCurricularUnitId(project.getCurricularUnit().getId());
+        
+        List<Person> students = enrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == StudentEnrollment.EnrollmentStatus.ENROLLED)
+                .map(StudentEnrollment::getStudent)
+                .toList();
+        
+        // Shuffle students for random assignment
+        List<Person> shuffledStudents = new ArrayList<>(students);
+        Collections.shuffle(shuffledStudents);
+        
+        int maxGroupSize = project.getMaxGroupSize();
+        int groupNumber = 1;
+        
+        for (int i = 0; i < shuffledStudents.size(); i += maxGroupSize) {
+            ProjectGroup group = new ProjectGroup(project, "Group " + groupNumber);
+            group = projectGroupRepository.save(group);
+            
+            // Add students to this group
+            int endIndex = Math.min(i + maxGroupSize, shuffledStudents.size());
+            for (int j = i; j < endIndex; j++) {
+                group.addMember(shuffledStudents.get(j));
+            }
+            
+            projectGroupRepository.save(group);
+            groupNumber++;
+        }
+    }
+
+    @Transactional
+    public List<ProjectGroupDto> getProjectGroups(long projectId) {
+        return projectGroupRepository.findByProjectIdOrderByGroupNameAsc(projectId).stream()
+                .map(ProjectGroupDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public ProjectGroupDto getStudentGroup(long projectId, long studentId) {
+        ProjectGroup group = projectGroupRepository.findByProjectIdAndStudentId(projectId, studentId);
+        return group != null ? new ProjectGroupDto(group) : null;
+    }
+
+    // Submission management
+    @Transactional
+    public ProjectSubmissionDto submitProject(long projectId, long studentId, String originalFilename, 
+                                            String storedFilename, long fileSize, String mimeType) {
+        Project project = fetchProjectOrThrow(projectId);
+        Person student = fetchPersonOrThrow(studentId);
+        
+        // Check if submission is still allowed
+        if (LocalDateTime.now().isAfter(project.getSubmissionDeadline())) {
+            throw new DEIException(ErrorMessage.SUBMISSION_DEADLINE_EXCEEDED);
+        }
+        
+        // Check file size if limit is set
+        if (project.getMaxFileSize() != null && fileSize > project.getMaxFileSize()) {
+            throw new DEIException(ErrorMessage.FILE_SIZE_EXCEEDED, String.valueOf(project.getMaxFileSize()));
+        }
+        
+        // Check file extension if restrictions exist
+        String extension = getFileExtension(originalFilename);
+        if (project.getAllowedExtensions() != null && !project.getAllowedExtensions().isEmpty()) {
+            if (!project.getAllowedExtensions().toLowerCase().contains(extension.toLowerCase())) {
+                throw new DEIException(ErrorMessage.INVALID_FILE_EXTENSION, extension);
+            }
+        }
+
+        ProjectSubmission submission;
+        if (project.isGroupProject()) {
+            // For group projects, find the student's group
+            ProjectGroup group = projectGroupRepository.findByProjectIdAndStudentId(projectId, studentId);
+            if (group == null) {
+                throw new DEIException(ErrorMessage.STUDENT_NOT_IN_GROUP);
+            }
+            
+            // Mark any existing group submission as not latest
+            ProjectSubmission existingSubmission = projectSubmissionRepository
+                    .findLatestByProjectIdAndGroupId(projectId, group.getId());
+            
+            if (existingSubmission != null) {
+                existingSubmission.setIsLatest(false);
+                projectSubmissionRepository.save(existingSubmission);
+            }
+            
+            // Create new group submission
+            submission = new ProjectSubmission(project, group, student, originalFilename, 
+                                             storedFilename, fileSize, mimeType, extension);
+            submission = projectSubmissionRepository.save(submission);
+        } else {
+            // Individual project submission
+            ProjectSubmission existingSubmission = projectSubmissionRepository
+                    .findLatestByProjectIdAndStudentId(projectId, studentId);
+            
+            if (existingSubmission != null) {
+                existingSubmission.setIsLatest(false);
+                projectSubmissionRepository.save(existingSubmission);
+            }
+            
+            // Create new individual submission
+            submission = new ProjectSubmission(project, student, originalFilename, 
+                                             storedFilename, fileSize, mimeType, extension);
+            submission = projectSubmissionRepository.save(submission);
+        }
+        
+        return new ProjectSubmissionDto(submission);
+    }
+
+    @Transactional
+    public List<ProjectSubmissionDto> getProjectSubmissions(long projectId) {
+        return projectSubmissionRepository.findByProjectIdOrderBySubmissionDateDesc(projectId).stream()
+                .map(ProjectSubmissionDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public ProjectSubmissionDto getStudentSubmission(long projectId, long studentId) {
+        Project project = fetchProjectOrThrow(projectId);
+        
+        ProjectSubmission submission;
+        if (project.isGroupProject()) {
+            ProjectGroup group = projectGroupRepository.findByProjectIdAndStudentId(projectId, studentId);
+            if (group == null) {
+                return null;
+            }
+            submission = projectSubmissionRepository.findLatestByProjectIdAndGroupId(projectId, group.getId());
+        } else {
+            submission = projectSubmissionRepository.findLatestByProjectIdAndStudentId(projectId, studentId);
+        }
+        
+        return submission != null ? new ProjectSubmissionDto(submission) : null;
+    }
+
+    @Transactional
+    public ProjectSubmissionDto gradeSubmission(long submissionId, double grade, String feedback, long graderId) {
+        ProjectSubmission submission = projectSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> new DEIException(ErrorMessage.SUBMISSION_NOT_FOUND));
+        
+        // Validate that grader exists
+        fetchPersonOrThrow(graderId);
+        
+        // Validate grade (assuming 0-20 scale)
+        if (grade < 0.0 || grade > 20.0) {
+            throw new DEIException(ErrorMessage.INVALID_GRADE, Double.toString(grade));
+        }
+        
+        // Since the ProjectSubmission doesn't have manual grading fields in the current implementation,
+        // we'll use the automatic grading fields for now
+        submission.setAutomaticGrade(grade);
+        submission.setAutomaticFeedback(feedback);
+        
+        submission = projectSubmissionRepository.save(submission);
+        return new ProjectSubmissionDto(submission);
+    }
+
+    @Transactional
+    public void deleteSubmission(long submissionId) {
+        ProjectSubmission submission = projectSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> new DEIException(ErrorMessage.SUBMISSION_NOT_FOUND));
+        
+        projectSubmissionRepository.delete(submission);
+    }
+
+    // Automatic grading placeholder (can be extended with actual grading logic)
+    @Transactional
+    public void performAutomaticGrading(long projectId) {
+        
+        List<ProjectSubmission> submissions = projectSubmissionRepository.findByProjectId(projectId);
+        
+        for (ProjectSubmission submission : submissions) {
+            if (submission.getAutomaticGrade() == null && submission.getIsLatest()) { 
+                // Only grade latest ungraded submissions
+                double automaticGrade = performAutomaticGradingLogic(submission);
+                
+                submission.setAutomaticGrade(automaticGrade);
+                submission.setAutomaticFeedback("Automatically graded");
+                projectSubmissionRepository.save(submission);
+            }
+        }
+    }
+
+    // Helper methods
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1) : "";
+    }
+    
+    private double performAutomaticGradingLogic(ProjectSubmission submission) {
+        // Placeholder implementation - return a default grade
+        // In a real implementation, this would:
+        // 1. Extract and analyze the submitted file
+        // 2. Run automated tests or checks
+        // 3. Calculate grade based on results
+        return 15.0; // Default grade of 15/20
+    }
+}

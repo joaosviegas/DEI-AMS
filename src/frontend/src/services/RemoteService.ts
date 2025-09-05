@@ -316,6 +316,24 @@ export default class RemoteServices {
     appearance.loading = false
     throw deiErr
   }
+  // Evaluation Grade methods
+  static async getEvaluationGrades(evaluationId: number): Promise<any[]> {
+    return httpClient.get(`/evaluation-grades/evaluation/${evaluationId}`)
+  }
+
+  static async saveEvaluationGrade(evaluationId: number, studentEnrollmentId: number, grade: number): Promise<any> {
+    const params = new URLSearchParams({
+      evaluationId: evaluationId.toString(),
+      studentEnrollmentId: studentEnrollmentId.toString(),
+      grade: grade.toString()
+    })
+    return httpClient.post(`/evaluation-grades`, null, { params })
+  }
+
+  static async requestGradeRevision(gradeId: number, reason: string): Promise<any> {
+    const params = new URLSearchParams({ reason })
+    return httpClient.put(`/evaluation-grades/${gradeId}/request-revision`, null, { params })
+  }
 }
 
 httpClient.interceptors.request.use((request) => request, RemoteServices.handleError)

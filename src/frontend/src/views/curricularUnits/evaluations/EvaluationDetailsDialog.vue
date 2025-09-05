@@ -193,6 +193,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import TestDto from '../../../models/TestDto'
+import ProjectDto from '../../../models/ProjectDto'
 import RemoteService from '../../../services/RemoteService'
 import { useRoleStore } from '../../../stores/role'
 
@@ -200,7 +201,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const props = defineProps({
   evaluation: {
-    type: Object as () => TestDto | undefined,
+    type: Object as () => TestDto | ProjectDto | undefined,
     default: undefined
   },
   modelValue: {

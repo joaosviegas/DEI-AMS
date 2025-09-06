@@ -88,8 +88,8 @@ public class StudentEnrollment {
 		if (!isActive()) {
 			throw new IllegalStateException("Cannot complete a non-active enrollment");
 		}
-		
-		this.finalGrade = grade;
+
+		this.finalGrade = Math.round(grade * 1.0) / 1.0;
 		this.completionDate = LocalDate.now();
 		this.status = (grade >= 9.5) ? EnrollmentStatus.APPROVED : EnrollmentStatus.FAILED;
 	}

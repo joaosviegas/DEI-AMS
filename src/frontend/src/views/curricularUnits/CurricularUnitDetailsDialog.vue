@@ -114,7 +114,7 @@
               
               <template v-slot:[`item.finalGrade`]="{ item }">
                 <span v-if="item.finalGrade !== null && item.finalGrade !== undefined">
-                  {{ item.finalGrade.toFixed(1) }}
+                  {{ item.finalGrade.toFixed(0) }}
                 </span>
                 <span v-else class="text-grey">-</span>
               </template>

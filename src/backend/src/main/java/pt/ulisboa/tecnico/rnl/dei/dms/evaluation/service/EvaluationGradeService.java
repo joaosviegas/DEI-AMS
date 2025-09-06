@@ -212,7 +212,7 @@ public class EvaluationGradeService {
             try {
                 String studentEmail = studentEnrollment.getStudent().getEmail();
                 String subject = "Atribuição de Nota Final - " + studentEnrollment.getCurricularUnit().getName();
-                String body = String.format("Caro(a) %s,\n\nA sua nota final para %s foi atribuída: %.1f.\n\nAtenciosamente,\nSistema AMS ",
+                String body = String.format("Caro(a) %s,\n\nA sua nota final para %s foi atribuída: %.0f.\n\nAtenciosamente,\nSistema AMS ",
                     studentEnrollment.getStudent().getName(),
                     studentEnrollment.getCurricularUnit().getName(),
                     finalGrade

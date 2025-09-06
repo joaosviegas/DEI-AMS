@@ -4,22 +4,49 @@ import PersonDto from './PersonDto'
 export default class ProjectGroupDto {
   id?: number
   projectId: number
-  name?: string
+  projectTitle?: string
+  groupName?: string
+  name?: string // Keep for backward compatibility
   members: PersonDto[]
   createdAt: string // ISO date string
+  finalGrade?: number | null
+  memberCount?: number
+  maxGroupSize?: number
+  isFull?: boolean
+  isEmpty?: boolean
+  canAddMoreMembers?: boolean
+  latestSubmission?: any
 
   constructor(
     projectId: number,
     members: PersonDto[] = [],
     createdAt: string = new Date().toISOString(),
     id?: number,
-    name?: string
+    name?: string,
+    groupName?: string,
+    finalGrade?: number | null,
+    projectTitle?: string,
+    memberCount?: number,
+    maxGroupSize?: number,
+    isFull?: boolean,
+    isEmpty?: boolean,
+    canAddMoreMembers?: boolean,
+    latestSubmission?: any
   ) {
     this.id = id
     this.projectId = projectId
     this.name = name
+    this.groupName = groupName || name // Use groupName if provided, fallback to name
     this.members = members
     this.createdAt = createdAt
+    this.finalGrade = finalGrade
+    this.projectTitle = projectTitle
+    this.memberCount = memberCount
+    this.maxGroupSize = maxGroupSize
+    this.isFull = isFull
+    this.isEmpty = isEmpty
+    this.canAddMoreMembers = canAddMoreMembers
+    this.latestSubmission = latestSubmission
   }
 
   // Factory method to create from backend response
@@ -29,7 +56,16 @@ export default class ProjectGroupDto {
       data.members ? data.members.map((member: any) => new PersonDto(member)) : [],
       data.createdAt,
       data.id,
-      data.name
+      data.name,
+      data.groupName,
+      data.finalGrade,
+      data.projectTitle,
+      data.memberCount,
+      data.maxGroupSize,
+      data.isFull,
+      data.isEmpty,
+      data.canAddMoreMembers,
+      data.latestSubmission
     )
   }
 

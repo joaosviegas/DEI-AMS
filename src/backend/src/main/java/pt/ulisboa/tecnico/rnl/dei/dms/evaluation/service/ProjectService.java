@@ -17,12 +17,14 @@ import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Project;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectGroup;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectMember;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.ProjectSubmission;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.EvaluationGrade;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectGroupDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectSubmissionDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectGroupRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectSubmissionRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.EvaluationGradeRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.domain.CurricularUnit;
 import pt.ulisboa.tecnico.rnl.dei.dms.curricularUnit.repository.CurricularUnitRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
@@ -57,6 +59,12 @@ public class ProjectService {
     
     @Autowired
     private PersonRepository personRepository;
+
+    @Autowired
+    private EvaluationGradeRepository evaluationGradeRepository;
+
+    @Autowired
+    private EvaluationGradeService evaluationGradeService;
 
     // Helper methods
     private Project fetchProjectOrThrow(long id) {
@@ -500,5 +508,64 @@ public class ProjectService {
         // 2. Run automated tests or checks
         // 3. Calculate grade based on results
         return 15.0; // Default grade of 15/20
+    }
+
+    // Group grading methods
+    @Transactional
+    public void gradeGroup(long projectId, long groupId, double grade) {
+        Project project = fetchProjectOrThrow(projectId);
+        ProjectGroup group = projectGroupRepository.findById(groupId)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_PERSON, "Group " + Long.toString(groupId)));
+        
+        // Validate that the group belongs to the project
+        if (!group.getProject().getId().equals(projectId)) {
+            throw new DEIException(ErrorMessage.RESOURCE_NOT_FOUND, "Group does not belong to project");
+        }
+        
+        // Validate grade
+        if (grade < 0.0 || grade > 20.0) {
+            throw new DEIException(ErrorMessage.INVALID_GRADE, Double.toString(grade));
+        }
+        
+        // Save the grade to the group
+        group.setFinalGrade(grade);
+        projectGroupRepository.save(group);
+        
+        // Also save individual grades for each group member for future average calculations
+        saveIndividualGradesForGroupMembers(project, group, grade);
+    }
+    
+    private void saveIndividualGradesForGroupMembers(Project project, ProjectGroup group, double grade) {
+        // Get the evaluation grade service to save individual grades
+        // This method creates EvaluationGrade entries for each group member
+        
+        for (ProjectMember member : group.getMembers()) {
+            // Find the student enrollment for this member in the project's curricular unit
+            StudentEnrollment enrollment = studentEnrollmentRepository
+                    .findByStudentIdAndCurricularUnitId(member.getStudent().getId(), 
+                                                       project.getCurricularUnit().getId())
+                    .orElse(null);
+            
+            if (enrollment != null) {
+                // Check if an evaluation grade already exists for this student and evaluation
+                EvaluationGrade existingGrade = evaluationGradeRepository
+                        .findByEvaluationIdAndStudentEnrollmentId(project.getId(), enrollment.getId())
+                        .orElse(null);
+                
+                if (existingGrade != null) {
+                    // Update existing grade
+                    existingGrade.setGrade(grade);
+                    existingGrade.setGradedAt(LocalDateTime.now());
+                    evaluationGradeRepository.save(existingGrade);
+                } else {
+                    // Create new evaluation grade
+                    EvaluationGrade newGrade = new EvaluationGrade(project, enrollment, grade);
+                    evaluationGradeRepository.save(newGrade);
+                }
+                
+                // Check if student has completed all evaluations and update enrollment if necessary
+                evaluationGradeService.checkAndUpdateStudentCompletion(enrollment);
+            }
+        }
     }
 }

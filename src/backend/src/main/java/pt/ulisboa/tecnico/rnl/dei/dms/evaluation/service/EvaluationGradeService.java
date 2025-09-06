@@ -5,9 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Evaluation;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.EvaluationGrade;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Test;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.domain.Project;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.EvaluationGradeDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.EvaluationGradeRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.TestRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.repository.ProjectRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment;
@@ -27,6 +30,9 @@ public class EvaluationGradeService {
 
     @Autowired
     private TestRepository testRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @Autowired
     private StudentEnrollmentRepository studentEnrollmentRepository;
@@ -90,6 +96,7 @@ public class EvaluationGradeService {
             throw new DEIException(ErrorMessage.GRADE_NOT_VALID);
         }
         
+        EvaluationGradeDto result;
         // Check if grade already exists
         EvaluationGrade existingGrade = evaluationGradeRepository
                 .findByEvaluationIdAndStudentEnrollmentId(evaluationId, studentEnrollmentId)
@@ -98,12 +105,17 @@ public class EvaluationGradeService {
         if (existingGrade != null) {
             // Update existing grade
             existingGrade.updateGrade(grade);
-            return new EvaluationGradeDto(evaluationGradeRepository.save(existingGrade));
+            result = new EvaluationGradeDto(evaluationGradeRepository.save(existingGrade));
         } else {
             // Create new grade
             EvaluationGrade newGrade = new EvaluationGrade(evaluation, studentEnrollment, grade);
-            return new EvaluationGradeDto(evaluationGradeRepository.save(newGrade));
+            result = new EvaluationGradeDto(evaluationGradeRepository.save(newGrade));
         }
+        
+        // Check if student has completed all evaluations and update enrollment if necessary
+        checkAndUpdateStudentCompletion(studentEnrollment);
+        
+        return result;
     }
 
     @Transactional
@@ -125,5 +137,70 @@ public class EvaluationGradeService {
         return evaluationGradeRepository.findPendingRevisions().stream()
                 .map(EvaluationGradeDto::new)
                 .toList();
+    }
+
+    /**
+     * Checks if a student has completed all evaluations (100% weight) and updates their enrollment
+     */
+    @Transactional
+    public void checkAndUpdateStudentCompletion(StudentEnrollment studentEnrollment) {
+        if (studentEnrollment.isCompleted()) {
+            // Already completed, don't update
+            return;
+        }
+
+        Long curricularUnitId = studentEnrollment.getCurricularUnit().getId();
+        Long studentEnrollmentId = studentEnrollment.getId();
+        
+        // Get all evaluations for this curricular unit
+        List<Test> tests = testRepository.findByCurricularUnitId(curricularUnitId);
+        List<Project> projects = projectRepository.findByCurricularUnitId(curricularUnitId);
+        
+        // Get all grades for this student in this curricular unit
+        List<EvaluationGrade> grades = evaluationGradeRepository
+                .findByStudentEnrollmentIdAndCurricularUnitId(studentEnrollmentId, curricularUnitId);
+        
+        // Calculate total weight of evaluations and graded evaluations
+        double totalWeight = 0.0;
+        double gradedWeight = 0.0;
+        double weightedSum = 0.0;
+        
+        // Add test weights
+        for (Test test : tests) {
+            totalWeight += test.getWeight();
+            
+            // Check if this test is graded
+            for (EvaluationGrade grade : grades) {
+                if (grade.getEvaluation().getId().equals(test.getId())) {
+                    gradedWeight += test.getWeight();
+                    weightedSum += grade.getGrade() * test.getWeight();
+                    break;
+                }
+            }
+        }
+        
+        // Add project weights
+        for (Project project : projects) {
+            totalWeight += project.getWeight();
+            
+            // Check if this project is graded
+            for (EvaluationGrade grade : grades) {
+                if (grade.getEvaluation().getId().equals(project.getId())) {
+                    gradedWeight += project.getWeight();
+                    weightedSum += grade.getGrade() * project.getWeight();
+                    break;
+                }
+            }
+        }
+        
+        // Check if all evaluations are graded (allowing for small floating point errors)
+        if (Math.abs(gradedWeight - totalWeight) < 0.001 && totalWeight > 0.0) {
+            // Calculate final grade as weighted average
+            double finalGrade = weightedSum / totalWeight;
+            
+            // Update student enrollment with final grade and completion status
+            studentEnrollment.complete(finalGrade);
+            studentEnrollmentRepository.save(studentEnrollment);
+        }
     }
 }

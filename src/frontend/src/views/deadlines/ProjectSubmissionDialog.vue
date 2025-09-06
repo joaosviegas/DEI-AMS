@@ -4,7 +4,7 @@
       <v-card-title class="d-flex justify-space-between align-center">
         <div>
           <span class="text-h5">Submeter Projeto</span>
-          <div class="text-subtitle-2 text-medium-emphasis">{{ project?.title }}</div>
+          <div class="text-subtitle-2 ">{{ project?.title }}</div>
         </div>
         <v-btn 
           icon="mdi-close" 
@@ -33,7 +33,7 @@
             
             <div v-if="project?.isGroupProject && myGroup" class="mb-2">
               <strong>Grupo:</strong> {{ myGroup.name || 'Grupo sem nome' }}
-              <div class="text-caption text-medium-emphasis">
+              <div class="text-caption ">
                 Esta submissão será feita em nome de todo o grupo
               </div>
             </div>
@@ -60,17 +60,17 @@
 
             <!-- File Requirements -->
             <div class="mt-2">
-              <div class="text-caption text-medium-emphasis mb-1">
+              <div class="text-caption  mb-1">
                 <strong>Requisitos:</strong>
               </div>
-              <div class="text-caption text-medium-emphasis">
+              <div class="text-caption ">
                 • Extensões permitidas: 
                 <span v-if="project?.allowedExtensions">
                   {{ project.allowedExtensions }}
                 </span>
                 <span v-else>Todas</span>
               </div>
-              <div class="text-caption text-medium-emphasis">
+              <div class="text-caption ">
                 • Tamanho máximo: {{ formatFileSize(project?.maxFileSize) }}
               </div>
             </div>
@@ -92,7 +92,7 @@
           <!-- Previous Submissions Warning -->
           <div v-if="hasExistingSubmission" class="mb-4">
             <v-alert
-              type="info"
+              type="warning"
               variant="tonal"
               density="compact"
             >
@@ -437,9 +437,3 @@ watch(localDialog, (isOpen) => {
   }
 })
 </script>
-
-<style scoped>
-.text-medium-emphasis {
-  color: rgb(var(--v-theme-on-surface-variant)) !important;
-}
-</style>

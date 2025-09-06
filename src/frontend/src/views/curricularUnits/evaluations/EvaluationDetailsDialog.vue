@@ -425,12 +425,13 @@ const loadGrades = async () => {
   loading.value = true
   try {
     if (isGroupProject.value) {
-      // Load groups for group projects
+      // Load groups for group projects - groups already contain their finalGrade
       const groups = await RemoteService.getProjectGroups(props.evaluation.id)
-      // For now, groups don't have grades stored separately, so we'll use a placeholder
+      
+      // Map groups with their grades (finalGrade from ProjectGroupDto)
       projectGroups.value = groups.map(group => ({
         ...group,
-        grade: null, // TODO: Load actual group grades when backend supports it
+        grade: group.finalGrade, // Use the finalGrade from the group
         changed: false
       }))
     } else {
@@ -490,20 +491,25 @@ const saveAllGroupGrades = async () => {
   try {
     const changedGroups = projectGroups.value.filter(item => item.changed && item.grade !== null)
     
-    // TODO: Implement group grade saving when backend supports it
-    // For now, we'll save grades to all group members individually
     for (const group of changedGroups) {
-      // This is a placeholder - in a real implementation, you'd either:
-      // 1. Have a dedicated group grade endpoint, or 
-      // 2. Apply the grade to all group members
-      console.log(`Would save grade ${group.grade} for group ${group.name}`)
+      await RemoteService.saveGroupGrade(
+        props.evaluation.id,
+        group.id,
+        group.grade
+      )
       group.changed = false
     }
     
     hasGroupGradeChanges.value = false
+    
+    // Show success message
+    console.log('Group grades saved successfully!')
+    
+    // Reload grades to get updated data
     await loadGrades()
   } catch (error) {
     console.error('Error saving group grades:', error)
+    alert('Erro ao guardar as notas dos grupos. Tente novamente.')
   } finally {
     saving.value = false
   }

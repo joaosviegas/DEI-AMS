@@ -362,6 +362,14 @@ export default class RemoteServices {
     const params = new URLSearchParams({ reason })
     return httpClient.put(`/evaluation-grades/${gradeId}/request-revision`, null, { params })
   }
+
+  // Group Grade methods
+  static async saveGroupGrade(projectId: number, groupId: number, grade: number): Promise<any> {
+    const params = new URLSearchParams({
+      grade: grade.toString()
+    })
+    return httpClient.put(`/projects/${projectId}/groups/${groupId}/grade`, null, { params })
+  }
 }
 
 httpClient.interceptors.request.use((request) => request, RemoteServices.handleError)

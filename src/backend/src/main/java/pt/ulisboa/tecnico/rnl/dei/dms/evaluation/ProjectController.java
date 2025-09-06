@@ -180,4 +180,16 @@ public class ProjectController {
                                                   originalFilename, storedFilename, 
                                                   file.getSize(), file.getContentType());
     }
+
+    // Group grading endpoints
+
+    @PutMapping("/{projectId}/groups/{groupId}/grade")
+    public ResponseEntity<String> gradeGroup(
+            @PathVariable long projectId,
+            @PathVariable long groupId,
+            @RequestParam double grade) {
+        
+        projectService.gradeGroup(projectId, groupId, grade);
+        return ResponseEntity.ok("Group grade saved successfully");
+    }
 }

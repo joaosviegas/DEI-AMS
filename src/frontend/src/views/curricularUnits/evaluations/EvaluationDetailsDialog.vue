@@ -318,7 +318,7 @@ import ProjectGroupDto from '../../../models/ProjectGroupDto'
 import RemoteService from '../../../services/RemoteService'
 import { useRoleStore } from '../../../stores/role'
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'grade-updated'])
 
 const props = defineProps({
   evaluation: {
@@ -477,6 +477,9 @@ const saveAllGrades = async () => {
     hasChanges.value = false
     // Reload grades to get updated data
     await loadGrades()
+    
+    // Emit event to notify parent component that grades were updated
+    emit('grade-updated')
   } catch (error) {
     console.error('Error saving grades:', error)
   } finally {
@@ -507,6 +510,9 @@ const saveAllGroupGrades = async () => {
     
     // Reload grades to get updated data
     await loadGrades()
+    
+    // Emit event to notify parent component that grades were updated
+    emit('grade-updated')
   } catch (error) {
     console.error('Error saving group grades:', error)
     alert('Erro ao guardar as notas dos grupos. Tente novamente.')

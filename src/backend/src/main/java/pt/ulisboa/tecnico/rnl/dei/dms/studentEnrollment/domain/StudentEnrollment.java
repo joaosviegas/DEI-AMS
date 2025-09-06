@@ -91,7 +91,7 @@ public class StudentEnrollment {
 		
 		this.finalGrade = grade;
 		this.completionDate = LocalDate.now();
-		this.status = (grade >= 10.0) ? EnrollmentStatus.APPROVED : EnrollmentStatus.FAILED;
+		this.status = (grade >= 9.5) ? EnrollmentStatus.APPROVED : EnrollmentStatus.FAILED;
 	}
 
 	/**

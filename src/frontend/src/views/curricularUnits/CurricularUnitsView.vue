@@ -74,6 +74,7 @@
   <CurricularUnitDetailsDialog 
     v-model="showDetailsDialog"
     :curricular-unit="selectedCurricularUnit"
+    @curricular-unit-updated="handleCurricularUnitUpdated"
   />
 
   <!-- Edit Dialog -->
@@ -287,6 +288,23 @@ const updateSelectedCurricularUnit = (updatedCurricularUnit: CurricularUnitDto) 
   }
   
   console.log('Updated selected curricular unit students:', selectedCurricularUnit.value?.studentEnrollments?.length || 0)
+}
+
+const handleCurricularUnitUpdated = async () => {
+  console.log('Curricular unit updated, refreshing data...')
+  const currentCurricularUnitId = selectedCurricularUnit.value?.id
+  
+  // Refresh all curricular units data
+  await getCurricularUnits()
+  
+  // Update the selected curricular unit with the refreshed data
+  if (currentCurricularUnitId) {
+    const updatedCU = curricularUnits.find(cu => cu.id === currentCurricularUnitId)
+    if (updatedCU) {
+      selectedCurricularUnit.value = updatedCU
+      console.log('Updated student enrollment data for curricular unit:', updatedCU.name)
+    }
+  }
 }
 
 const fuzzySearch = (value: string, search: string) => {

@@ -17,6 +17,12 @@ import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.repository.StudentEnrollmentRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 
+import jakarta.mail.Message;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -201,6 +207,41 @@ public class EvaluationGradeService {
             // Update student enrollment with final grade and completion status
             studentEnrollment.complete(finalGrade);
             studentEnrollmentRepository.save(studentEnrollment);
+            
+            // Send email notification to student about final grade
+            try {
+                String studentEmail = studentEnrollment.getStudent().getEmail();
+                String subject = "Atribuição de Nota Final - " + studentEnrollment.getCurricularUnit().getName();
+                String body = String.format("Caro(a) %s,\n\nA sua nota final para %s foi atribuída: %.1f.\n\nAtenciosamente,\nSistema AMS ",
+                    studentEnrollment.getStudent().getName(),
+                    studentEnrollment.getCurricularUnit().getName(),
+                    finalGrade
+                );
+                sendFinalGradeEmail(studentEmail, subject, body);
+            } catch (Exception e) {
+                // Log but do not interrupt flow
+                System.err.println("[WARN] Could not send final grade email: " + e.getMessage());
+            }
+        }
+    }
+    
+    // Helper to send email to MailCrab (localhost:1025)
+    private void sendFinalGradeEmail(String to, String subject, String body) {
+        try {
+            java.util.Properties props = new java.util.Properties();
+            props.put("mail.smtp.host", "localhost");
+            props.put("mail.smtp.port", "1025");
+            jakarta.mail.Session session = jakarta.mail.Session.getInstance(props, null);
+            jakarta.mail.Message msg = new jakarta.mail.internet.MimeMessage(session);
+            msg.setFrom(new jakarta.mail.internet.InternetAddress("ams@localhost"));
+            msg.setRecipients(jakarta.mail.Message.RecipientType.TO, jakarta.mail.internet.InternetAddress.parse(to, false));
+            msg.setSubject(subject);
+            msg.setText(body);
+            msg.setHeader("X-Mailer", "AMS System");
+            msg.setSentDate(new java.util.Date());
+            jakarta.mail.Transport.send(msg);
+        } catch (Exception e) {
+            System.err.println("[ERROR] Failed to send email: " + e.getMessage());
         }
     }
 }

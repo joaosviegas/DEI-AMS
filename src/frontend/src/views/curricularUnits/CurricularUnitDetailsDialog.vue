@@ -111,6 +111,14 @@
                   {{ getStatusText(item.status) }}
                 </v-chip>
               </template>
+              
+              <template v-slot:[`item.finalGrade`]="{ item }">
+                <span v-if="item.finalGrade !== null && item.finalGrade !== undefined">
+                  {{ item.finalGrade.toFixed(1) }}
+                </span>
+                <span v-else class="text-grey">-</span>
+              </template>
+              
             </v-data-table>
           </v-tabs-window-item>
 
@@ -344,6 +352,7 @@
   <EvaluationDetailsDialog
     v-model="showEvaluationDetailsDialog"
     :evaluation="selectedEvaluation"
+    @grade-updated="handleGradeUpdated"
   />
 
   <!-- Edit Test Dialog -->
@@ -481,7 +490,8 @@ const studentHeaders = [
   { title: 'Nome', key: 'name', value: 'name' },
   { title: 'IST ID', key: 'istId', value: 'istId' },
   { title: 'Email', key: 'email', value: 'email' },
-  { title: 'Estado', key: 'status', value: 'status' }
+  { title: 'Estado', key: 'status', value: 'status' },
+  { title: 'Nota Final', key: 'finalGrade', value: 'finalGrade' },
 ]
 
 const evaluationHeaders = [
@@ -536,7 +546,8 @@ const allStudents = computed(() => {
   // Transform enrollments to show student data with status
   return curricularUnit.value.studentEnrollments.map(enrollment => ({
     ...enrollment.student,
-    status: enrollment.status
+    status: enrollment.status,
+    finalGrade: enrollment.finalGrade
   }))
 })
 
@@ -966,6 +977,13 @@ const handleCurricularUnitUpdated = (updatedCU: CurricularUnitDto) => {
 }
 
 // Watch for curricular unit changes to load evaluations and resources
+// Handle grade updates
+const handleGradeUpdated = () => {
+  console.log('Grade updated, emitting curricular-unit-updated event')
+  emit('curricular-unit-updated')
+}
+
+// Watchers
 watch(() => curricularUnit.value, async (newCU) => {
   if (newCU) {
     await loadEvaluations()

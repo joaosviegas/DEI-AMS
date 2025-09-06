@@ -355,8 +355,9 @@ const canGrade = computed(() => {
 })
 
 const isGroupProject = computed(() => {
-  return props.evaluation?.type === 'PROJECT' && 
-         (props.evaluation as ProjectDto)?.isGroupProject === true
+  // All projects (both individual and group) use the group-based grading system
+  // Individual projects just have groups with 1 member each
+  return props.evaluation?.type === 'PROJECT'
 })
 
 const groupHeaders = computed(() => {

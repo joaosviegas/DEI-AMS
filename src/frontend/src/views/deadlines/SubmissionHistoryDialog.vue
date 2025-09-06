@@ -15,7 +15,7 @@
       </v-card-title>
 
       <v-card-text>
-        <div v-if="project.isGroupProject && myGroup" class="mb-4">
+        <div v-if="myGroup" class="mb-4">
           <v-alert
             type="info"
             variant="tonal"
@@ -23,9 +23,20 @@
           >
             <div class="d-flex align-center gap-2">
               <div>
-                <strong>Projeto de Grupo:</strong> {{ 'Grupo ' + myGroup.id || 'Grupo sem nome' }}
+                <strong>{{ myGroup.members.length > 1 ? 'Projeto de Grupo:' : 'Projeto Individual:' }}</strong> 
+                {{ myGroup.name || (myGroup.members[0]?.name || `Grupo ${myGroup.id}`) }}
                 <div class="text-caption">
-                  As submissões são partilhadas por todos os membros do grupo
+                  {{ myGroup.members.length > 1 
+                      ? 'As submissões são partilhadas por todos os membros do grupo'
+                      : 'Suas submissões pessoais para este projeto'
+                  }}
+                </div>
+                <div v-if="getDisplayGrade()?.hasGrade()" class="text-caption mt-1">
+                  <v-icon size="small" class="mr-1">mdi-school</v-icon>
+                  <strong>Nota atribuída: {{ getDisplayGrade()?.grade }}/20</strong>
+                  <span v-if="getDisplayGrade()?.revisionRequested" class="text-warning ml-2">
+                    (Revisão solicitada)
+                  </span>
                 </div>
               </div>
             </div>
@@ -91,15 +102,19 @@
           </template>
 
           <template v-slot:[`item.grade`]="{ item }">
-            <div v-if="item.automaticGrade !== null && item.automaticGrade !== undefined">
+            <div v-if="getDisplayGrade() && getDisplayGrade()?.hasGrade()">
               <v-chip
-                :color="getGradeColor(item.automaticGrade)"
+                :color="getGradeColor(getDisplayGrade()?.grade || 0)"
                 size="small"
               >
-                {{ item.automaticGrade.toFixed(1) }}/20
+                {{ getDisplayGrade()?.grade?.toFixed(1) }}/20
               </v-chip>
-              <div v-if="item.automaticFeedback" class="text-caption text-grey mt-1">
-                {{ item.automaticFeedback }}
+              <div v-if="getDisplayGrade()?.comments" class="text-caption text-grey mt-1">
+                {{ getDisplayGrade()?.comments }}
+              </div>
+              <div v-if="getDisplayGrade()?.revisionRequested" class="text-caption text-warning mt-1">
+                <v-icon size="small" class="mr-1">mdi-alert</v-icon>
+                Revisão solicitada
               </div>
             </div>
             <div v-else>
@@ -193,13 +208,17 @@
               {{ selectedSubmission.submittedBy.name }} ({{ selectedSubmission.submittedBy.istId }})
             </v-list-item-subtitle>
           </v-list-item>
-          <v-list-item v-if="selectedSubmission.automaticGrade !== null">
-            <v-list-item-title>Nota Automática</v-list-item-title>
-            <v-list-item-subtitle>{{ selectedSubmission.automaticGrade }}/20</v-list-item-subtitle>
+          <v-list-item v-if="getDisplayGrade()?.hasGrade()">
+            <v-list-item-title>Nota de Avaliação</v-list-item-title>
+            <v-list-item-subtitle>{{ getDisplayGrade()?.grade }}/20</v-list-item-subtitle>
           </v-list-item>
-          <v-list-item v-if="selectedSubmission.automaticFeedback">
-            <v-list-item-title>Feedback</v-list-item-title>
-            <v-list-item-subtitle>{{ selectedSubmission.automaticFeedback }}</v-list-item-subtitle>
+          <v-list-item v-if="getDisplayGrade()?.comments">
+            <v-list-item-title>Comentários do Professor</v-list-item-title>
+            <v-list-item-subtitle>{{ getDisplayGrade()?.comments }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item v-if="getDisplayGrade()?.revisionRequested">
+            <v-list-item-title>Revisão Solicitada</v-list-item-title>
+            <v-list-item-subtitle>{{ getDisplayGrade()?.revisionReason }}</v-list-item-subtitle>
           </v-list-item>
         </v-list>
       </v-card-text>
@@ -216,6 +235,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import ProjectDto from '../../models/ProjectDto'
 import ProjectGroupDto from '../../models/ProjectGroupDto'
 import ProjectSubmissionDto from '../../models/ProjectSubmissionDto'
+import EvaluationGradeDto from '../../models/EvaluationGradeDto'
 import RemoteService from '../../services/RemoteService'
 
 const emit = defineEmits(['update:modelValue', 'startSubmission'])
@@ -238,6 +258,7 @@ const props = defineProps({
 // Reactive data
 const loading = ref(false)
 const submissions = ref<(ProjectSubmissionDto & { version?: number })[]>([])
+const evaluationGrades = ref<EvaluationGradeDto[]>([])
 const showDetailsDialog = ref(false)
 const selectedSubmission = ref<(ProjectSubmissionDto & { version?: number }) | null>(null)
 
@@ -249,7 +270,7 @@ const localDialog = computed({
 const canSubmit = computed(() => {
   if (!props.project) return false
   if (props.project.isSubmissionClosed) return false
-  if (props.project.isGroupProject && !props.myGroup) return false
+  if (!props.myGroup) return false
   return true
 })
 
@@ -259,7 +280,7 @@ const headers = [
   { title: 'Ficheiro', key: 'filename', value: 'filename' },
   { title: 'Submetido por', key: 'submitter', value: 'submitter' },
   { title: 'Versão', key: 'version', value: 'version' },
-  { title: 'Nota', key: 'grade', value: 'grade' },
+  { title: 'Avaliação', key: 'grade', value: 'grade' },
   { title: 'Ações', key: 'actions', value: 'actions', sortable: false }
 ]
 
@@ -336,13 +357,51 @@ const getGradeColor = (grade: number) => {
   return 'red'
 }
 
+// Get evaluation grade for a group member
+const getEvaluationGradeForMember = (memberId: number): EvaluationGradeDto | null => {
+  return evaluationGrades.value.find(grade => grade.student.id === memberId) || null
+}
+
+// Get the grade to display
+const getDisplayGrade = () => {
+  if (!props.myGroup?.members || props.myGroup.members.length === 0) return null
+
+  return getEvaluationGradeForMember(props.myGroup.members[0].id)
+}
+
 // Actions
-const downloadSubmission = (submission: ProjectSubmissionDto) => {
-  // This would typically create a download URL from the backend
-  console.log('Download submission:', submission.originalFilename)
-  // Placeholder - in real implementation, you'd call:
-  // window.open(`/api/projects/submissions/${submission.id}/download`)
-  alert('Funcionalidade de download não implementada nesta demo.')
+const downloadSubmission = async (submission: ProjectSubmissionDto) => {
+  try {
+    if (!submission.id) {
+      console.error('Submission ID is missing')
+      return
+    }
+
+    const response = await RemoteService.downloadSubmission(submission.id)
+    
+    // Check if response has data
+    if (!response.data || response.data.byteLength === 0) {
+      console.error('Empty file response')
+      return
+    }
+    
+    // Create blob from arraybuffer with proper content type
+    const blob = new Blob([response.data], { type: 'application/octet-stream' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = submission.originalFilename || `submission_${submission.id}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    console.log('Submission downloaded successfully:', submission.originalFilename)
+  } catch (error) {
+    console.error('Error downloading submission:', error)
+    // You could show a toast notification here instead
+    alert('Erro ao fazer download da submissão. Tente novamente.')
+  }
 }
 
 const viewSubmissionDetails = (submission: ProjectSubmissionDto) => {
@@ -356,11 +415,12 @@ const loadSubmissions = async () => {
   
   loading.value = true
   try {
-    if (props.project.isGroupProject && props.myGroup?.id) {
-      // Load submissions for the group
+    // Load submissions
+    if (props.myGroup?.id) {
+      // Load submissions for the group (works for both individual and group projects)
       submissions.value = await RemoteService.getGroupSubmissions(props.project.id, props.myGroup.id)
-    } else if (!props.project.isGroupProject) {
-      // Load individual submissions - get all submissions and filter for current user
+    } else {
+      // Fallback: Load individual submissions - get all submissions and filter for current user
       // For demo purposes, assume user ID 1
       const allSubmissions = await RemoteService.getProjectSubmissions(props.project.id)
       submissions.value = allSubmissions.filter(s => s.submittedBy.id === 1) // Demo: filter for user 1
@@ -373,9 +433,19 @@ const loadSubmissions = async () => {
         ...submission,
         version: index + 1
       }))
+
+    // Load evaluation grades for this project
+    try {
+      const grades = await RemoteService.getEvaluationGrades(props.project.id)
+      evaluationGrades.value = grades.map(grade => EvaluationGradeDto.fromBackend(grade))
+    } catch (error) {
+      console.warn('Could not load evaluation grades:', error)
+      evaluationGrades.value = []
+    }
   } catch (error) {
     console.error('Error loading submissions:', error)
     submissions.value = []
+    evaluationGrades.value = []
   } finally {
     loading.value = false
   }

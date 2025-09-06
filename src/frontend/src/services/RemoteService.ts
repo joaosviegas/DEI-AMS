@@ -278,8 +278,16 @@ export default class RemoteServices {
     return httpClient.post(`/projects/submissions/${submissionId}/grade`, null, { params })
   }
 
-  static async deleteSubmission(submissionId: number): Promise<void> {
-    return httpClient.delete(`/projects/submissions/${submissionId}`)
+  static async downloadSubmission(submissionId: number): Promise<AxiosResponse<ArrayBuffer>> {
+    // Create a separate axios instance to bypass the response interceptor
+    const downloadClient = axios.create({
+      timeout: 50000,
+      baseURL: import.meta.env.VITE_ROOT_API
+    })
+    
+    return downloadClient.get(`/projects/submissions/${submissionId}/download`, { 
+      responseType: 'arraybuffer'
+    })
   }
 
   static async performAutomaticGrading(projectId: number): Promise<string> {

@@ -31,10 +31,13 @@
               </v-chip>
             </div>
             
-            <div v-if="project?.isGroupProject && myGroup" class="mb-2">
-              <strong>Grupo:</strong> {{ myGroup.name || 'Grupo sem nome' }}
+            <div v-if="myGroup" class="mb-2">
+              <strong>Grupo:</strong> {{ myGroup.name || (myGroup.members[0]?.name || 'Grupo sem nome') }}
               <div class="text-caption ">
-                Esta submissão será feita em nome de todo o grupo
+                {{ myGroup.members.length > 1 
+                    ? 'Esta submissão será feita em nome de todo o grupo'
+                    : 'Esta submissão será feita em seu nome'
+                }}
               </div>
             </div>
           </div>
@@ -371,8 +374,8 @@ const submitProject = async () => {
     
     studentId = props.myGroup.members[0].id;
     
-    if (props.project.isGroupProject && props.myGroup?.id) {
-      // Submit for group
+    if (props.myGroup?.id) {
+      // Submit for group (works for both individual and group projects)
       await RemoteService.submitProjectForGroup(
         props.project.id,
         props.myGroup.id,
@@ -380,12 +383,7 @@ const submitProject = async () => {
         file
       )
     } else {
-      // Submit individually
-      await RemoteService.submitProject(
-        props.project.id,
-        studentId,
-        file
-      )
+      throw new Error('No group information available for submission')
     }
 
     clearInterval(progressInterval)

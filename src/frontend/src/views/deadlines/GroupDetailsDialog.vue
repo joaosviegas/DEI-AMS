@@ -2,8 +2,9 @@
   <v-dialog v-model="localDialog" max-width="600">
     <v-card v-if="group">
       <v-card-title class="d-flex justify-space-between align-center">
-        <div>
-          <span class="text-h5">{{ 'Grupo ' + group.name || 'Grupo sem nome' }}</span>
+        <div>              <span class="text-h5">
+                {{ group.name || (group.members[0]?.name ? `${group.members[0]?.name}` : 'Grupo sem nome') }}
+              </span>
           <div class="text-subtitle-2 ">
             {{ project?.title }}
           </div>
@@ -17,16 +18,27 @@
       </v-card-title>
 
       <v-card-text>
-        <!-- Group Info -->
+        <!-- Group/Student Info -->
         <div class="mb-4">
           <v-row>
             <v-col cols="6">
-              <div class="text-caption  mb-1">NOME DO GRUPO</div>
-              <div class="text-h6">{{ 'Grupo ' + group.id || 'Sem nome' }}</div>
+              <div class="text-caption  mb-1">
+                NOME DO GRUPO
+              </div>
+              <div class="text-h6">
+                {{ group.name || (group.members[0]?.name ? `${group.members[0]?.name}` : 'Sem nome') }}
+              </div>
             </v-col>
             <v-col cols="6">
-              <div class="text-caption  mb-1">TOTAL DE MEMBROS</div>
-              <div class="text-h6">{{ group.members?.length || 0 }}</div>
+              <div class="text-caption  mb-1">
+                TOTAL DE MEMBROS
+              </div>
+              <div class="text-h6">
+                {{ group.members?.length || 0 }}
+                <span class="text-body-2  ml-2" v-if="group.members?.length === 1 && group.members[0]?.istId">
+                  (IST ID: {{ group.members[0]?.istId }})
+                </span>
+              </div>
             </v-col>
           </v-row>
         </div>

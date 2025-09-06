@@ -130,10 +130,13 @@
                       {{ (project.weight * 100).toFixed(1) }}%
                     </div>
                   </v-col>
-                  <v-col cols="12" sm="6" md="3" v-if="project.isGroupProject">
-                    <div class="text-caption  mb-1">GRUPOS</div>
+                  <v-col cols="12" sm="6" md="3">
+                    <div class="text-caption  mb-1">
+                      GRUPOS
+                    </div>
                     <div class="font-weight-medium">
-                      {{ projectGroups[project.id]?.length || 0 }} grupos
+                      {{ projectGroups[project.id]?.length || 0 }} 
+                      {{ projectGroups[project.id]?.length === 1 ? 'grupo' : 'grupos' }}
                     </div>
                   </v-col>
                   <v-col cols="12" sm="6" md="3">
@@ -151,10 +154,12 @@
                   </p>
                 </div>
 
-                <!-- Groups Section (for group projects) -->
-                <div v-if="project.isGroupProject && projectGroups[project.id]" class="mb-4">
+                <!-- Groups/Students Section -->
+                <div class="mb-4">
                   <div class="d-flex justify-space-between align-center mb-3">
-                    <h4 class="text-subtitle-1">Grupos do Projeto</h4>
+                    <h4 class="text-subtitle-1">
+                      Grupos do Projeto
+                    </h4>
                     <v-btn
                       size="small"
                       variant="text"
@@ -184,7 +189,7 @@
                             <v-card-text class="pb-2">
                               <div class="d-flex justify-space-between align-center mb-2">
                                 <h5 class="font-weight-medium">
-                                  {{ group.name || `Grupo ${group.id}` }}
+                                  {{ group.name || (group.members[0]?.name ? `${group.members[0]?.name}` : `Grupo ${group.id}`) }}
                                 </h5>
                                 <v-chip
                                   :color="getGroupSubmissionStatus(project.id, group.id).color"
@@ -198,6 +203,9 @@
                               <div class="text-caption  mb-2">
                                 {{ group.members.length }} 
                                 {{ group.members.length === 1 ? 'membro' : 'membros' }}
+                                <span v-if="group.members.length === 1 && group.members[0]?.istId">
+                                  • IST ID: {{ group.members[0]?.istId }}
+                                </span>
                               </div>
 
                               <div class="d-flex flex-wrap gap-1">
@@ -226,28 +234,6 @@
                     </div>
                   </v-expand-transition>
                 </div>
-
-                <!-- Individual Project Actions -->
-                <div v-else-if="!project.isGroupProject" class="text-center">
-                  <div class="d-flex justify-center gap-2">
-                    <v-btn
-                      color="success"
-                      prepend-icon="mdi-upload"
-                      @click="openIndividualSubmission(project)"
-                      :disabled="project.isSubmissionClosed"
-                    >
-                      Submeter
-                    </v-btn>
-                    <v-btn
-                      color="primary"
-                      variant="outlined"
-                      prepend-icon="mdi-history"
-                      @click="openIndividualHistory(project)"
-                    >
-                      Ver Histórico
-                    </v-btn>
-                  </div>
-                </div>
               </v-card-text>
             </v-card>
           </v-col>
@@ -269,13 +255,17 @@
       <v-card v-if="selectedProject && selectedGroup">
         <v-card-title>
           <div>
-            <h3>{{ selectedGroup.name || `Grupo ${selectedGroup.id}` }}</h3>
+            <h3>
+              {{ selectedGroup.name || (selectedGroup.members[0]?.name ? `${selectedGroup.members[0]?.name}` : `Grupo ${selectedGroup.id}`) }}
+            </h3>
             <p class="text-subtitle-2  mb-0">{{ selectedProject.title }}</p>
           </div>
         </v-card-title>
         <v-card-text>
           <div class="mb-4">
-            <div class="text-caption  mb-2">MEMBROS DO GRUPO</div>
+            <div class="text-caption  mb-2">
+              MEMBROS DO GRUPO
+            </div>
             <v-chip-group column>
               <v-chip
                 v-for="member in selectedGroup.members"
@@ -283,7 +273,12 @@
                 size="small"
                 variant="outlined"
               >
-                {{ member.name }}
+                <div class="d-flex flex-column align-start">
+                  <span>{{ member.name }}</span>
+                  <span class="text-caption" v-if="member.istId">
+                    IST ID: {{ member.istId }}
+                  </span>
+                </div>
               </v-chip>
             </v-chip-group>
           </div>
@@ -315,7 +310,7 @@
             @click="openGroupSubmission(selectedProject, selectedGroup)"
             :disabled="selectedProject.isSubmissionClosed"
           >
-            Submeter
+            Submeter Projeto
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -454,9 +449,9 @@ const loadData = async () => {
       ...uniqueUCs.map(uc => ({ title: uc, value: uc }))
     ]
 
-    // Load groups for group projects
+    // Load groups for ALL projects (both individual and group projects)
     for (const project of allProjects) {
-      if (project.isGroupProject && project.id) {
+      if (project.id) {
         try {
           const groups = await RemoteService.getProjectGroups(project.id)
           projectGroups.value[project.id] = groups
@@ -514,19 +509,6 @@ const openGroupHistory = (project: ProjectDto, group: ProjectGroupDto) => {
   selectedProject.value = project
   selectedGroup.value = group
   showGroupActions.value = false
-  showHistoryDialog.value = true
-}
-
-const openIndividualSubmission = (project: ProjectDto) => {
-  selectedProject.value = project
-  selectedGroup.value = null
-  hasExistingSubmission.value = false // TODO: Check individual submissions
-  showSubmissionDialog.value = true
-}
-
-const openIndividualHistory = (project: ProjectDto) => {
-  selectedProject.value = project
-  selectedGroup.value = null
   showHistoryDialog.value = true
 }
 
@@ -634,15 +616,11 @@ const isUrgent = (project: ProjectDto) => {
 const getSubmissionCount = (project: ProjectDto) => {
   if (!project.id) return 0
   
-  if (project.isGroupProject) {
-    const groups = projectGroups.value[project.id] || []
-    return groups.reduce((total, group) => {
-      return total + getGroupSubmissionCount(project.id, group.id || 0)
-    }, 0)
-  }
-  
-  // TODO: Implement individual submission count
-  return 0
+  // Both individual and group projects now have groups
+  const groups = projectGroups.value[project.id] || []
+  return groups.reduce((total, group) => {
+    return total + getGroupSubmissionCount(project.id, group.id || 0)
+  }, 0)
 }
 
 const getGroupSubmissionCount = (projectId: number, groupId: number) => {
@@ -653,6 +631,7 @@ const getGroupSubmissionCount = (projectId: number, groupId: number) => {
 const getGroupSubmissionStatus = (projectId: number, groupId: number) => {
   const submissions = groupSubmissions.value[`${projectId}-${groupId}`] || []
   const count = submissions.length
+  const project = projects.value.find(p => p.id === projectId)
   
   if (count === 0) {
     return {
@@ -663,7 +642,7 @@ const getGroupSubmissionStatus = (projectId: number, groupId: number) => {
     }
   } else {
     const latest = submissions[submissions.length - 1]
-    const isOnTime = new Date(latest.submissionDate) <= new Date(projects.value.find(p => p.id === projectId)?.submissionDeadline || '')
+    const isOnTime = new Date(latest.submissionDate) <= new Date(project?.submissionDeadline || '')
     
     return {
       color: isOnTime ? 'success' : 'warning',

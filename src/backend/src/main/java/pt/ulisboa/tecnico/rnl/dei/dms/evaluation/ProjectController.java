@@ -15,7 +15,6 @@ import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.dto.ProjectSubmissionDto;
 import pt.ulisboa.tecnico.rnl.dei.dms.evaluation.service.ProjectService;
 
 import java.io.IOException;
-import java.util.UUID;
 
 /**
  * REST controller for Project operations
@@ -95,16 +94,10 @@ public class ProjectController {
             @RequestParam long studentId,
             @RequestParam("file") MultipartFile file) throws IOException {
         
-        // Generate a unique filename to avoid conflicts
-        String originalFilename = file.getOriginalFilename();
-        String storedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+        // Store the actual file using FileService
+        String storedFilename = projectService.storeSubmissionFile(file);
         
-        // In a real implementation, you would:
-        // 1. Store the file to disk/cloud storage using storedFilename
-        // 2. Return the stored path for later retrieval
-        // For now, we'll just pass the parameters to the service
-        
-        return projectService.submitProject(projectId, studentId, originalFilename, 
+        return projectService.submitProject(projectId, studentId, file.getOriginalFilename(), 
                                           storedFilename, file.getSize(), file.getContentType());
     }
 
@@ -135,17 +128,9 @@ public class ProjectController {
                                             feedback != null ? feedback : "", graderId);
     }
 
-    @DeleteMapping("/submissions/{submissionId}")
-    public void deleteSubmission(@PathVariable long submissionId) {
-        projectService.deleteSubmission(submissionId);
-    }
-
-    // Automatic grading endpoint
-
-    @PostMapping("/{projectId}/auto-grade")
-    public ResponseEntity<String> performAutomaticGrading(@PathVariable long projectId) {
-        projectService.performAutomaticGrading(projectId);
-        return ResponseEntity.ok("Automatic grading completed for project " + projectId);
+    @GetMapping("/submissions/{submissionId}/download")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadSubmission(@PathVariable long submissionId) {
+        return projectService.downloadSubmission(submissionId);
     }
 
     // Group-specific submission endpoints
@@ -172,12 +157,11 @@ public class ProjectController {
             @RequestParam long studentId,
             @RequestParam("file") MultipartFile file) throws IOException {
         
-        // Generate a unique filename to avoid conflicts
-        String originalFilename = file.getOriginalFilename();
-        String storedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+        // Store the actual file using FileService
+        String storedFilename = projectService.storeSubmissionFile(file);
         
         return projectService.submitProjectForGroup(projectId, groupId, studentId, 
-                                                  originalFilename, storedFilename, 
+                                                  file.getOriginalFilename(), storedFilename, 
                                                   file.getSize(), file.getContentType());
     }
 

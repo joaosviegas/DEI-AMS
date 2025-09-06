@@ -8,8 +8,13 @@ import java.util.Collections;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.DEIException;
 import pt.ulisboa.tecnico.rnl.dei.dms.exceptions.ErrorMessage;
@@ -31,6 +36,7 @@ import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.repository.StudentEnrollmentRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.domain.Person;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.repository.PersonRepository;
+import pt.ulisboa.tecnico.rnl.dei.dms.file.FileService;
 
 /**
  * Service class for managing Project entities and related operations
@@ -65,6 +71,9 @@ public class ProjectService {
 
     @Autowired
     private EvaluationGradeService evaluationGradeService;
+
+    @Autowired
+    private FileService fileService;
 
     // Helper methods
     private Project fetchProjectOrThrow(long id) {
@@ -123,10 +132,8 @@ public class ProjectService {
 
         project = projectRepository.save(project);
         
-        // If it's a group project, create groups automatically
-        if (project.isGroupProject()) {
-            createGroupsForProject(project);
-        }
+        // Create groups for all projects (individual projects get groups of size 1)
+        createGroupsForProject(project);
 
         return new ProjectDto(project);
     }
@@ -169,10 +176,6 @@ public class ProjectService {
     // Group management
     @Transactional
     public void createGroupsForProject(Project project) {
-        if (!project.isGroupProject()) {
-            return; // No groups needed for individual projects
-        }
-        
         // Get all enrolled students for this curricular unit
         List<StudentEnrollment> enrollments = studentEnrollmentRepository
                 .findByCurricularUnitId(project.getCurricularUnit().getId());
@@ -190,7 +193,8 @@ public class ProjectService {
         List<Person> shuffledStudents = new ArrayList<>(students);
         Collections.shuffle(shuffledStudents);
         
-        int maxGroupSize = project.getMaxGroupSize();
+        // For individual projects, maxGroupSize should be 1
+        int maxGroupSize = project.isIndividual() ? 1 : project.getMaxGroupSize();
         int totalStudents = shuffledStudents.size();
         int groupNumber = 1;
         int studentIndex = 0;
@@ -460,11 +464,6 @@ public class ProjectService {
             throw new DEIException(ErrorMessage.INVALID_GRADE, Double.toString(grade));
         }
         
-        // Since the ProjectSubmission doesn't have manual grading fields in the current implementation,
-        // we'll use the automatic grading fields for now
-        submission.setAutomaticGrade(grade);
-        submission.setAutomaticFeedback(feedback);
-        
         submission = projectSubmissionRepository.save(submission);
         return new ProjectSubmissionDto(submission);
     }
@@ -477,38 +476,13 @@ public class ProjectService {
         projectSubmissionRepository.delete(submission);
     }
 
-    // Automatic grading placeholder (can be extended with actual grading logic)
-    @Transactional
-    public void performAutomaticGrading(long projectId) {
-        
-        List<ProjectSubmission> submissions = projectSubmissionRepository.findByProjectId(projectId);
-        
-        for (ProjectSubmission submission : submissions) {
-            if (submission.getAutomaticGrade() == null && submission.getIsLatest()) { 
-                // Only grade latest ungraded submissions
-                double automaticGrade = performAutomaticGradingLogic(submission);
-                
-                submission.setAutomaticGrade(automaticGrade);
-                submission.setAutomaticFeedback("Automatically graded");
-                projectSubmissionRepository.save(submission);
-            }
-        }
-    }
 
     // Helper methods
     private String getFileExtension(String fileName) {
         int lastDot = fileName.lastIndexOf('.');
         return lastDot > 0 ? fileName.substring(lastDot + 1) : "";
     }
-    
-    private double performAutomaticGradingLogic(ProjectSubmission submission) {
-        // Placeholder implementation - return a default grade
-        // In a real implementation, this would:
-        // 1. Extract and analyze the submitted file
-        // 2. Run automated tests or checks
-        // 3. Calculate grade based on results
-        return 15.0; // Default grade of 15/20
-    }
+
 
     // Group grading methods
     @Transactional
@@ -568,4 +542,44 @@ public class ProjectService {
             }
         }
     }
+
+    /**
+     * Store a submission file using the FileService
+     * @param file the file to store
+     * @return the stored filename
+     */
+    public String storeSubmissionFile(MultipartFile file) {
+        return fileService.storeFile(file);
+    }
+
+    /**
+     * Download a project submission file
+     * @param submissionId the ID of the submission to download
+     * @return ResponseEntity with the file resource
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadSubmission(long submissionId) {
+        // Find the submission
+        ProjectSubmission submission = projectSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_TEST, "Submission " + Long.toString(submissionId)));
+
+        // Check if stored filename exists
+        if (submission.getStoredFilename() == null || submission.getStoredFilename().trim().isEmpty()) {
+            throw new DEIException(ErrorMessage.NO_SUCH_TEST, "No file associated with submission " + submissionId);
+        }
+
+        try {
+            // Load the file using the stored filename
+            Resource file = fileService.loadFileAsResource(submission.getStoredFilename());
+            
+            // Return the file with appropriate headers
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + submission.getOriginalFilename() + "\"")
+                    .body(file);
+        } catch (Exception e) {
+            throw new DEIException(ErrorMessage.NO_SUCH_TEST, "File not found for submission " + submissionId + ": " + e.getMessage());
+        }
+    }
+    
 }

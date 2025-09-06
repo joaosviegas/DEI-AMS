@@ -17,12 +17,6 @@ import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.domain.StudentEnrollment
 import pt.ulisboa.tecnico.rnl.dei.dms.studentEnrollment.repository.StudentEnrollmentRepository;
 import pt.ulisboa.tecnico.rnl.dei.dms.person.dto.PersonDto;
 
-import jakarta.mail.Message;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -49,8 +43,12 @@ public class EvaluationGradeService {
     }
 
     private Evaluation fetchEvaluationOrThrow(Long id) {
+        // Try to find in test repository first
         return testRepository.findById(id)
-                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_TEST, Long.toString(id)));
+                .map(test -> (Evaluation) test)
+                .orElseGet(() -> projectRepository.findById(id)
+                        .map(project -> (Evaluation) project)
+                        .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_TEST, Long.toString(id))));
     }
 
     private StudentEnrollment fetchStudentEnrollmentOrThrow(Long id) {

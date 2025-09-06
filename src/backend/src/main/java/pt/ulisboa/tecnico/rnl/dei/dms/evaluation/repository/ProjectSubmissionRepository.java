@@ -38,6 +38,11 @@ public interface ProjectSubmissionRepository extends JpaRepository<ProjectSubmis
     List<ProjectSubmission> findByGroupIdOrderBySubmissionDateDesc(Long groupId);
     
     /**
+     * Find submissions for a specific project and group
+     */
+    List<ProjectSubmission> findByProjectIdAndGroupIdOrderBySubmissionDateDesc(Long projectId, Long groupId);
+    
+    /**
      * Find latest submissions only
      */
     List<ProjectSubmission> findByIsLatestTrueOrderBySubmissionDateDesc();

@@ -352,6 +352,76 @@ public class ProjectService {
     }
 
     @Transactional
+    public List<ProjectSubmissionDto> getGroupSubmissions(long projectId, long groupId) {
+        return projectSubmissionRepository.findByProjectIdAndGroupIdOrderBySubmissionDateDesc(projectId, groupId).stream()
+                .map(ProjectSubmissionDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public ProjectSubmissionDto getLatestGroupSubmission(long projectId, long groupId) {
+        ProjectSubmission submission = projectSubmissionRepository.findLatestByProjectIdAndGroupId(projectId, groupId);
+        return submission != null ? new ProjectSubmissionDto(submission) : null;
+    }
+
+    @Transactional
+    public ProjectSubmissionDto submitProjectForGroup(long projectId, long groupId, long studentId, 
+                                                    String originalFilename, String storedFilename, 
+                                                    long fileSize, String mimeType) {
+        Project project = fetchProjectOrThrow(projectId);
+        Person student = fetchPersonOrThrow(studentId);
+        
+        // Verify that the group exists and belongs to this project
+        ProjectGroup group = projectGroupRepository.findById(groupId)
+                .orElseThrow(() -> new DEIException(ErrorMessage.NO_SUCH_TEST, "Group " + groupId));
+        
+        if (!group.getProject().getId().equals(projectId)) {
+            throw new DEIException(ErrorMessage.NO_SUCH_TEST, "Group does not belong to project " + projectId);
+        }
+        
+        // Verify that the student is a member of this group
+        boolean isMember = group.getMembers().stream()
+                .anyMatch(member -> member.getStudent().getId().equals(studentId));
+        
+        if (!isMember) {
+            throw new DEIException(ErrorMessage.STUDENT_NOT_IN_GROUP);
+        }
+        
+        // Check if submission is still allowed
+        if (LocalDateTime.now().isAfter(project.getSubmissionDeadline())) {
+            throw new DEIException(ErrorMessage.SUBMISSION_DEADLINE_EXCEEDED);
+        }
+        
+        // Check file size and extension (same validation as before)
+        if (project.getMaxFileSize() != null && fileSize > project.getMaxFileSize()) {
+            throw new DEIException(ErrorMessage.FILE_SIZE_EXCEEDED, String.valueOf(project.getMaxFileSize()));
+        }
+        
+        String extension = getFileExtension(originalFilename);
+        if (project.getAllowedExtensions() != null && !project.getAllowedExtensions().isEmpty()) {
+            if (!project.getAllowedExtensions().toLowerCase().contains(extension.toLowerCase())) {
+                throw new DEIException(ErrorMessage.INVALID_FILE_EXTENSION, extension);
+            }
+        }
+        
+        // Mark any existing group submission as not latest
+        ProjectSubmission existingSubmission = projectSubmissionRepository
+                .findLatestByProjectIdAndGroupId(projectId, groupId);
+        
+        if (existingSubmission != null) {
+            existingSubmission.setIsLatest(false);
+            projectSubmissionRepository.save(existingSubmission);
+        }
+        
+        // Create new group submission
+        ProjectSubmission submission = new ProjectSubmission(project, group, student, originalFilename, 
+                                                           storedFilename, fileSize, mimeType, extension);
+        submission = projectSubmissionRepository.save(submission);
+        
+        return new ProjectSubmissionDto(submission);
+    }
+
+    @Transactional
     public ProjectSubmissionDto getStudentSubmission(long projectId, long studentId) {
         Project project = fetchProjectOrThrow(projectId);
         

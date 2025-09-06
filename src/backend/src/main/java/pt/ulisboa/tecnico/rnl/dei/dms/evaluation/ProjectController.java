@@ -147,4 +147,37 @@ public class ProjectController {
         projectService.performAutomaticGrading(projectId);
         return ResponseEntity.ok("Automatic grading completed for project " + projectId);
     }
+
+    // Group-specific submission endpoints
+
+    @GetMapping("/{projectId}/groups/{groupId}/submissions")
+    public List<ProjectSubmissionDto> getGroupSubmissions(
+            @PathVariable long projectId, 
+            @PathVariable long groupId) {
+        return projectService.getGroupSubmissions(projectId, groupId);
+    }
+
+    @GetMapping("/{projectId}/groups/{groupId}/submissions/latest")
+    public ResponseEntity<ProjectSubmissionDto> getLatestGroupSubmission(
+            @PathVariable long projectId, 
+            @PathVariable long groupId) {
+        ProjectSubmissionDto submission = projectService.getLatestGroupSubmission(projectId, groupId);
+        return submission != null ? ResponseEntity.ok(submission) : ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/{projectId}/groups/{groupId}/submissions")
+    public ProjectSubmissionDto submitProjectForGroup(
+            @PathVariable long projectId,
+            @PathVariable long groupId,
+            @RequestParam long studentId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        
+        // Generate a unique filename to avoid conflicts
+        String originalFilename = file.getOriginalFilename();
+        String storedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+        
+        return projectService.submitProjectForGroup(projectId, groupId, studentId, 
+                                                  originalFilename, storedFilename, 
+                                                  file.getSize(), file.getContentType());
+    }
 }

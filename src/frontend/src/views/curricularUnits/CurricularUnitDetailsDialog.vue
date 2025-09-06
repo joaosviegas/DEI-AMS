@@ -50,7 +50,7 @@
           <v-tab>Professores</v-tab>
           <v-tab>Alunos</v-tab>
           <v-tab>Avaliações</v-tab>
-          <v-tab>Recursos</v-tab>
+          <v-tab>Material de Estudo</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab">
@@ -673,19 +673,19 @@ const saveTestFilesToStorage = () => {
   }
 }
 
-const loadTestFilesFromStorage = () => {
+const loadTestFilesFromStorage = (allMaterials: ResourceDto[]) => {
   if (!curricularUnit.value?.id) return
   
   const saved = localStorage.getItem(`testFiles_${curricularUnit.value.id}`)
   if (saved) {
     const savedTestFiles = JSON.parse(saved)
-    // Rebuild test files references from loaded resources
+    // Rebuild test files references from all materials (before filtering)
     for (const [evalId, files] of Object.entries(savedTestFiles)) {
       const evaluationId = parseInt(evalId)
       const filesObj = files as any
       testFiles.value[evaluationId] = {
-        statement: filesObj.statement ? allResources.value.find((r: ResourceDto) => r.id === filesObj.statement.id) : undefined,
-        correction: filesObj.correction ? allResources.value.find((r: ResourceDto) => r.id === filesObj.correction.id) : undefined
+        statement: filesObj.statement ? allMaterials.find((r: ResourceDto) => r.id === filesObj.statement.id) : undefined,
+        correction: filesObj.correction ? allMaterials.find((r: ResourceDto) => r.id === filesObj.correction.id) : undefined
       }
     }
   }
@@ -703,12 +703,23 @@ const loadResources = async () => {
     // Only load materials since students won't upload submissions here
     const materials = await RemoteService.getMaterials(curricularUnit.value.id)
     console.log('Loaded materials:', materials)
-    allResources.value = materials
     
-    // Load test files tracking after resources are loaded
-    loadTestFilesFromStorage()
+    // Load test files tracking first with all materials (before filtering)
+    loadTestFilesFromStorage(materials)
     
-    console.log('Resources updated in component:', allResources.value)
+    // Filter out test statement and correction files from the general resources list
+    const testFileIds = new Set<number>()
+    
+    // Collect all test file IDs that are currently tracked
+    Object.values(testFiles.value).forEach(files => {
+      if (files.statement) testFileIds.add(files.statement.id)
+      if (files.correction) testFileIds.add(files.correction.id)
+    })
+    
+    // Filter out test files from the general resources
+    allResources.value = materials.filter(resource => !testFileIds.has(resource.id))
+    
+    console.log('Resources updated in component (filtered):', allResources.value)
     console.log('Test files:', testFiles.value)
   } catch (error) {
     console.error('Error loading resources:', error)
@@ -784,12 +795,11 @@ const handleTestStatementUpload = async (event: Event) => {
     const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
     console.log('Test statement upload response:', response)
     
-    // Reload resources first to get the new file
-    await loadResources()
+    // Get all materials to find the uploaded file
+    const materials = await RemoteService.getMaterials(curricularUnit.value.id)
     
-    // Find the newly uploaded file and track it AFTER resources are loaded
-    // Note: Backend adds UUID prefix to fileName, so we match by checking if fileName ends with original name
-    const uploadedFile = allResources.value.find(resource => 
+    // Find the newly uploaded file
+    const uploadedFile = materials.find(resource => 
       resource.fileName.endsWith(file.name) || resource.name === file.name
     )
     console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
@@ -804,6 +814,9 @@ const handleTestStatementUpload = async (event: Event) => {
     } else {
       console.error('Could not find uploaded file in resources!')
     }
+    
+    // Reload resources to update the filtered list
+    await loadResources()
     
     // Clear the input and reset evaluation ID
     if (testStatementInput.value) {
@@ -840,12 +853,11 @@ const handleTestCorrectionUpload = async (event: Event) => {
     const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
     console.log('Test correction upload response:', response)
     
-    // Reload resources first to get the new file
-    await loadResources()
+    // Get all materials to find the uploaded file
+    const materials = await RemoteService.getMaterials(curricularUnit.value.id)
     
-    // Find the newly uploaded file and track it AFTER resources are loaded
-    // Note: Backend adds UUID prefix to fileName, so we match by checking if fileName ends with original name
-    const uploadedFile = allResources.value.find(resource => 
+    // Find the newly uploaded file
+    const uploadedFile = materials.find(resource => 
       resource.fileName.endsWith(file.name) || resource.name === file.name
     )
     console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
@@ -861,6 +873,9 @@ const handleTestCorrectionUpload = async (event: Event) => {
     } else {
       console.error('Could not find uploaded file in resources!')
     }
+    
+    // Reload resources to update the filtered list
+    await loadResources()
     
     // Clear the input and reset evaluation ID
     if (testCorrectionInput.value) {

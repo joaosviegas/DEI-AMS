@@ -4,6 +4,7 @@ import PeopleView from '@/views/people/PeopleView.vue'
 import StatisticsView from '@/views/statistics/StatisticsView.vue'
 import CoursesView from '@/views/courses/CoursesView.vue'
 import CurricularUnitsView from '@/views/curricularUnits/CurricularUnitsView.vue'
+import DeadlinesView from '@/views/deadlines/DeadlinesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/statistics',
       name: 'statistics',
       component: StatisticsView
+    },
+    {
+      path: '/deadlines',
+      name: 'deadlines',
+      component: DeadlinesView
     }
   ]
 })

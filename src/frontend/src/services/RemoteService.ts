@@ -222,6 +222,34 @@ export default class RemoteServices {
     })
   }
 
+  static async submitProjectForGroup(projectId: number, groupId: number, studentId: number, file: File): Promise<ProjectSubmissionDto> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('studentId', studentId.toString())
+
+    return httpClient.post(`/projects/${projectId}/groups/${groupId}/submissions`, formData, {
+      transformRequest: [(data, headers) => {
+        delete headers['Content-Type'];
+        return data;
+      }]
+    })
+  }
+
+  static async getGroupSubmissions(projectId: number, groupId: number): Promise<ProjectSubmissionDto[]> {
+    return httpClient.get(`/projects/${projectId}/groups/${groupId}/submissions`)
+  }
+
+  static async getLatestGroupSubmission(projectId: number, groupId: number): Promise<ProjectSubmissionDto | null> {
+    try {
+      return httpClient.get(`/projects/${projectId}/groups/${groupId}/submissions/latest`)
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
   static async getProjectSubmissions(projectId: number): Promise<ProjectSubmissionDto[]> {
     return httpClient.get(`/projects/${projectId}/submissions`)
   }

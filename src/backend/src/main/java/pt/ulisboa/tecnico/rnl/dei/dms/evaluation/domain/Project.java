@@ -72,7 +72,7 @@ public class Project extends Evaluation {
         this.submissionDeadline = submissionDeadline;
         this.description = description;
         this.maxGroupSize = 1; // Individual project
-        this.allowedExtensions = "py,c,zip";
+        this.allowedExtensions = "py, c, zip, java";
         this.maxFileSize = 10L * 1024 * 1024; // 10MB default
     }
 
@@ -85,7 +85,7 @@ public class Project extends Evaluation {
         this.submissionDeadline = submissionDeadline;
         this.description = description;
         this.maxGroupSize = maxGroupSize;
-        this.allowedExtensions = "py,c,cpp,java,zip,pdf";
+        this.allowedExtensions = "py,c,java,zip";
         this.maxFileSize = 10L * 1024 * 1024; // 10MB default
     }
 

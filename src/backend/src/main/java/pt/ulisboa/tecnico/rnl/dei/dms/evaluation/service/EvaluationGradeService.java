@@ -60,10 +60,10 @@ public class EvaluationGradeService {
     public List<EvaluationGradeDto> getGradesByEvaluation(Long evaluationId) {
         Evaluation evaluation = fetchEvaluationOrThrow(evaluationId);
         
-        // Get all student enrollments for this curricular unit
+        // Get all student enrollments for this curricular unit (regardless of status)
+        // This ensures that students still appear in evaluation details even after their status changes
         List<StudentEnrollment> enrollments = studentEnrollmentRepository
-                .findByCurricularUnitIdAndStatus(evaluation.getCurricularUnit().getId(), 
-                                               StudentEnrollment.EnrollmentStatus.ENROLLED);
+                .findByCurricularUnitId(evaluation.getCurricularUnit().getId());
         
         List<EvaluationGradeDto> result = new ArrayList<>();
         
@@ -197,8 +197,9 @@ public class EvaluationGradeService {
             }
         }
         
+
         // Check if all evaluations are graded (allowing for small floating point errors)
-        if (Math.abs(gradedWeight - totalWeight) < 0.001 && totalWeight > 0.0) {
+        if ( totalWeight == 1 && Math.abs(gradedWeight - totalWeight) < 0.001 && totalWeight > 0.0) {
             // Calculate final grade as weighted average
             double finalGrade = weightedSum / totalWeight;
             

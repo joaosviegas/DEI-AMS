@@ -176,12 +176,12 @@ public class ProjectService {
     // Group management
     @Transactional
     public void createGroupsForProject(Project project) {
-        // Get all enrolled students for this curricular unit
+        // Get all students for this curricular unit (regardless of enrollment status)
+        // This ensures that students are included in groups even if their status changed after grading
         List<StudentEnrollment> enrollments = studentEnrollmentRepository
                 .findByCurricularUnitId(project.getCurricularUnit().getId());
         
         List<Person> students = enrollments.stream()
-                .filter(enrollment -> enrollment.getStatus() == StudentEnrollment.EnrollmentStatus.ENROLLED)
                 .map(StudentEnrollment::getStudent)
                 .toList();
         
@@ -236,18 +236,20 @@ public class ProjectService {
     public void integrateNewStudentIntoGroups(long curricularUnitId, long studentId) {
         Person student = fetchPersonOrThrow(studentId);
         
-        // Find all group projects for this curricular unit
-        List<Project> groupProjects = projectRepository.findByCurricularUnitIdOrderByDateAsc(curricularUnitId).stream()
-                .filter(Project::isGroupProject)
+        // Find all projects for this curricular unit (both individual and group)
+        List<Project> projects = projectRepository.findByCurricularUnitIdOrderByDateAsc(curricularUnitId).stream()
                 .filter(project -> !project.isCompleted()) // Only add to ongoing/future projects
                 .toList();
         
-        for (Project project : groupProjects) {
+        for (Project project : projects) {
             // Check if student is already in a group for this project
             ProjectGroup existingGroup = projectGroupRepository.findByProjectIdAndStudentId(project.getId(), studentId);
             if (existingGroup != null) {
                 continue; // Student already in a group for this project
             }
+            
+            // Get the max group size for this project (1 for individual, N for group projects)
+            int maxGroupSize = project.isIndividual() ? 1 : project.getMaxGroupSize();
             
             // Find the smallest group to maintain balance
             List<ProjectGroup> groups = projectGroupRepository.findByProjectIdOrderByGroupNameAsc(project.getId());
@@ -266,7 +268,7 @@ public class ProjectService {
                         .orElse(groups.get(0));
                 
                 // Only add if the group isn't at max capacity
-                if (smallestGroup.getMembers().size() < project.getMaxGroupSize()) {
+                if (smallestGroup.getMembers().size() < maxGroupSize) {
                     ProjectMember member = new ProjectMember(smallestGroup, student);
                     entityManager.persist(member);
                     smallestGroup.getMembers().add(member);
@@ -317,41 +319,26 @@ public class ProjectService {
         }
 
         ProjectSubmission submission;
-        if (project.isGroupProject()) {
-            // For group projects, find the student's group
-            ProjectGroup group = projectGroupRepository.findByProjectIdAndStudentId(projectId, studentId);
-            if (group == null) {
-                throw new DEIException(ErrorMessage.STUDENT_NOT_IN_GROUP);
-            }
-            
-            // Mark any existing group submission as not latest
-            ProjectSubmission existingSubmission = projectSubmissionRepository
-                    .findLatestByProjectIdAndGroupId(projectId, group.getId());
-            
-            if (existingSubmission != null) {
-                existingSubmission.setIsLatest(false);
-                projectSubmissionRepository.save(existingSubmission);
-            }
-            
-            // Create new group submission
-            submission = new ProjectSubmission(project, group, student, originalFilename, 
-                                             storedFilename, fileSize, mimeType, extension);
-            submission = projectSubmissionRepository.save(submission);
-        } else {
-            // Individual project submission
-            ProjectSubmission existingSubmission = projectSubmissionRepository
-                    .findLatestByProjectIdAndStudentId(projectId, studentId);
-            
-            if (existingSubmission != null) {
-                existingSubmission.setIsLatest(false);
-                projectSubmissionRepository.save(existingSubmission);
-            }
-            
-            // Create new individual submission
-            submission = new ProjectSubmission(project, student, originalFilename, 
-                                             storedFilename, fileSize, mimeType, extension);
-            submission = projectSubmissionRepository.save(submission);
+        
+        // For all projects (both individual and group), find the student's group
+        ProjectGroup group = projectGroupRepository.findByProjectIdAndStudentId(projectId, studentId);
+        if (group == null) {
+            throw new DEIException(ErrorMessage.STUDENT_NOT_IN_GROUP);
         }
+        
+        // Mark any existing group submission as not latest
+        ProjectSubmission existingSubmission = projectSubmissionRepository
+                .findLatestByProjectIdAndGroupId(projectId, group.getId());
+        
+        if (existingSubmission != null) {
+            existingSubmission.setIsLatest(false);
+            projectSubmissionRepository.save(existingSubmission);
+        }
+        
+        // Create new group submission (works for both individual and group projects)
+        submission = new ProjectSubmission(project, group, student, originalFilename, 
+                                         storedFilename, fileSize, mimeType, extension);
+        submission = projectSubmissionRepository.save(submission);
         
         return new ProjectSubmissionDto(submission);
     }

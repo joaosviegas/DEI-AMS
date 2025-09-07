@@ -45,17 +45,21 @@ public abstract class Evaluation {
     @OneToMany(mappedBy = "evaluation", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<EvaluationGrade> grades = new HashSet<>();
 
+    @Column(name = "revision_deadline", nullable = false)
+    private LocalDateTime revisionDeadline;
+
     public enum EvaluationType {
         TEST,
         PROJECT
     }
 
-    public Evaluation(String title, LocalDateTime date, Double weight, CurricularUnit curricularUnit, EvaluationType evaluationType) {
+    public Evaluation(String title, LocalDateTime date, Double weight, CurricularUnit curricularUnit, EvaluationType evaluationType, LocalDateTime revisionDeadline) {
         this.title = title;
         this.date = date;
         this.weight = weight;
         this.curricularUnit = curricularUnit;
         this.evaluationType = evaluationType;
+        this.revisionDeadline = revisionDeadline;
     }
 
     /**

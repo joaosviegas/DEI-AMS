@@ -67,8 +67,8 @@ public class Project extends Evaluation {
      * Constructor for individual projects
      */
     public Project(String title, Double weight, CurricularUnit curricularUnit,
-                   LocalDateTime submissionDeadline, String description) {
-        super(title, submissionDeadline, weight, curricularUnit, EvaluationType.PROJECT);
+                   LocalDateTime submissionDeadline, String description, LocalDateTime revisionDeadline) {
+        super(title, submissionDeadline, weight, curricularUnit, EvaluationType.PROJECT, revisionDeadline);
         this.submissionDeadline = submissionDeadline;
         this.description = description;
         this.maxGroupSize = 1; // Individual project
@@ -80,8 +80,8 @@ public class Project extends Evaluation {
      * Constructor for group projects
      */
     public Project(String title, Double weight, CurricularUnit curricularUnit,
-                   LocalDateTime submissionDeadline, String description, Integer maxGroupSize) {
-        super(title, submissionDeadline, weight, curricularUnit, EvaluationType.PROJECT);
+                   LocalDateTime submissionDeadline, String description, Integer maxGroupSize, LocalDateTime revisionDeadline) {
+        super(title, submissionDeadline, weight, curricularUnit, EvaluationType.PROJECT, revisionDeadline);
         this.submissionDeadline = submissionDeadline;
         this.description = description;
         this.maxGroupSize = maxGroupSize;

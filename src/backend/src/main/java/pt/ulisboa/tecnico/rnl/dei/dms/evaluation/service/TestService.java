@@ -54,7 +54,7 @@ public class TestService {
     }
 
     @Transactional
-    public TestDto createTest(long curricularUnitId, String title, LocalDateTime date, Double weight) {
+    public TestDto createTest(long curricularUnitId, String title, LocalDateTime date, Double weight, LocalDateTime revisionDeadline) {
         CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
 
         // Validate input
@@ -69,6 +69,10 @@ public class TestService {
         if (weight == null || weight < 0.0 || weight > 1.0) {
             throw new DEIException(ErrorMessage.TEST_WEIGHT_NOT_VALID);
         }
+        
+        if (revisionDeadline == null || revisionDeadline.isBefore(date)) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Revision deadline must be after evaluation date");
+        }
 
         // Check total weight of evaluations
         double currentTotalWeight = curricularUnit.getEvaluations().stream()
@@ -79,14 +83,14 @@ public class TestService {
             throw new DEIException(ErrorMessage.EVALUATION_WEIGHT_EXCEEDS_LIMIT);
         }
 
-        Test test = new Test(title, date, weight, curricularUnit);
+        Test test = new Test(title, date, weight, curricularUnit, revisionDeadline);
         return new TestDto(testRepository.save(test));
 
         // Note: Consider checking if the total weight of evaluations exceeds 1.0 before adding this test
     }
 
     @Transactional
-    public TestDto updateTest(long id, String title, LocalDateTime date, Double weight) {
+    public TestDto updateTest(long id, String title, LocalDateTime date, Double weight, LocalDateTime revisionDeadline) {
         Test test = fetchTestOrThrow(id);
 
         // Validate input
@@ -100,6 +104,10 @@ public class TestService {
 
         if (weight == null || weight < 0.0 || weight > 1.0) {
             throw new DEIException(ErrorMessage.TEST_WEIGHT_NOT_VALID);
+        }
+        
+        if (revisionDeadline == null || revisionDeadline.isBefore(date)) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Revision deadline must be after evaluation date");
         }
 
         // Check total weight of evaluations
@@ -115,6 +123,7 @@ public class TestService {
         test.setTitle(title);
         test.setDate(date);
         test.setWeight(weight);
+        test.setRevisionDeadline(revisionDeadline);
 
         return new TestDto(testRepository.save(test));
     }

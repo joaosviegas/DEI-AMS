@@ -16,13 +16,13 @@ import java.time.LocalDateTime;
 @Table(name = "tests")
 public class Test extends Evaluation {
 
-    public Test(String title, LocalDateTime date, Double weight, CurricularUnit curricularUnit) {
-        super(title, date, weight, curricularUnit, EvaluationType.TEST);
+    public Test(String title, LocalDateTime date, Double weight, CurricularUnit curricularUnit, LocalDateTime revisionDeadline) {
+        super(title, date, weight, curricularUnit, EvaluationType.TEST, revisionDeadline);
     }
 
     public Test(String title, LocalDateTime date, Double weight, CurricularUnit curricularUnit, 
-                String description, Integer durationMinutes, String location) {
-        super(title, date, weight, curricularUnit, EvaluationType.TEST);
+                String description, Integer durationMinutes, String location, LocalDateTime revisionDeadline) {
+        super(title, date, weight, curricularUnit, EvaluationType.TEST, revisionDeadline);
     }
 
     /**

@@ -12,6 +12,7 @@ public record TestDto(
     Double weight,
     Long curricularUnitId,
     String curricularUnitName,
+    LocalDateTime revisionDeadline,
     boolean isCompleted,
     boolean isUpcoming
 ) {
@@ -23,6 +24,7 @@ public record TestDto(
             test.getWeight(),
             test.getCurricularUnit().getId(),
             test.getCurricularUnit().getName(),
+            test.getRevisionDeadline(),
             test.isCompleted(),
             test.isUpcoming()
         );

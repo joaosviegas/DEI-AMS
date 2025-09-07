@@ -45,10 +45,11 @@ public class ProjectController {
             @RequestParam Double weight,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime submissionDeadline,
             @RequestParam String description,
-            @RequestParam(required = false) Integer maxGroupSize
+            @RequestParam(required = false) Integer maxGroupSize,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime revisionDeadline
             ) {
         return projectService.createProject(curricularUnitId, title, weight,
-                submissionDeadline, description, maxGroupSize);
+                submissionDeadline, description, maxGroupSize, revisionDeadline);
     }
 
     @PutMapping("/{id}")
@@ -59,10 +60,11 @@ public class ProjectController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime submissionDeadline,
             @RequestParam String description,
             @RequestParam(required = false) String allowedExtensions,
-            @RequestParam(required = false) Long maxFileSize) {
+            @RequestParam(required = false) Long maxFileSize,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime revisionDeadline) {
         
         return projectService.updateProject(id, title, weight, submissionDeadline, 
-                                          description, allowedExtensions, maxFileSize);
+                                          description, allowedExtensions, maxFileSize, revisionDeadline);
     }
 
     @DeleteMapping("/{id}")

@@ -107,7 +107,7 @@ public class ProjectService {
     @Transactional
     public ProjectDto createProject(long curricularUnitId, String title, 
                                   Double weight, LocalDateTime submissionDeadline, String description,
-                                  Integer maxGroupSize) {
+                                  Integer maxGroupSize, LocalDateTime revisionDeadline) {
         CurricularUnit curricularUnit = fetchCurricularUnitOrThrow(curricularUnitId);
         
         // Validate weight
@@ -119,15 +119,19 @@ public class ProjectService {
         if (submissionDeadline.isBefore(LocalDateTime.now())) {
             throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Submission deadline cannot be in the past");
         }
+        
+        if (revisionDeadline == null || revisionDeadline.isBefore(submissionDeadline)) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Revision deadline must be after submission deadline");
+        }
 
         Project project;
         if (maxGroupSize != null && maxGroupSize > 1) {
             // Group project
             project = new Project(title, weight, curricularUnit, submissionDeadline, 
-                                description, maxGroupSize);
+                                description, maxGroupSize, revisionDeadline);
         } else {
             // Individual project
-            project = new Project(title, weight, curricularUnit, submissionDeadline, description);
+            project = new Project(title, weight, curricularUnit, submissionDeadline, description, revisionDeadline);
         }
 
         project = projectRepository.save(project);
@@ -141,12 +145,16 @@ public class ProjectService {
     @Transactional
     public ProjectDto updateProject(long id, String title, Double weight,
                                   LocalDateTime submissionDeadline, String description, String allowedExtensions,
-                                  Long maxFileSize) {
+                                  Long maxFileSize, LocalDateTime revisionDeadline) {
         Project project = fetchProjectOrThrow(id);
         
         // Validate weight
         if (weight < 0.0 || weight > 1.0) {
             throw new DEIException(ErrorMessage.INVALID_WEIGHT, Double.toString(weight));
+        }
+        
+        if (revisionDeadline == null || revisionDeadline.isBefore(submissionDeadline)) {
+            throw new DEIException(ErrorMessage.TEST_DATE_NOT_VALID, "Revision deadline must be after submission deadline");
         }
 
         project.setTitle(title);
@@ -156,6 +164,7 @@ public class ProjectService {
         project.setDescription(description);
         project.setAllowedExtensions(allowedExtensions);
         project.setMaxFileSize(maxFileSize);
+        project.setRevisionDeadline(revisionDeadline);
 
         project = projectRepository.save(project);
         return new ProjectDto(project);

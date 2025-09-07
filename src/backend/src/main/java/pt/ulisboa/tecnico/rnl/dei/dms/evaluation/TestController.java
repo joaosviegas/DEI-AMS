@@ -38,8 +38,9 @@ public class TestController {
             @PathVariable long curricularUnitId,
             @RequestParam String title,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date,
-            @RequestParam Double weight) {
-        return testService.createTest(curricularUnitId, title, date, weight);
+            @RequestParam Double weight,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime revisionDeadline) {
+        return testService.createTest(curricularUnitId, title, date, weight, revisionDeadline);
     }
 
     @PutMapping("/{id}")
@@ -47,8 +48,9 @@ public class TestController {
             @PathVariable long id,
             @RequestParam String title,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date,
-            @RequestParam Double weight) {
-        return testService.updateTest(id, title, date, weight);
+            @RequestParam Double weight,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime revisionDeadline) {
+        return testService.updateTest(id, title, date, weight, revisionDeadline);
     }
 
     @DeleteMapping("/{id}")

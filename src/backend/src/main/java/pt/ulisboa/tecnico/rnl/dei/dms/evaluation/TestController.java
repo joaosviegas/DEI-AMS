@@ -19,6 +19,11 @@ public class TestController {
     private TestService testService;
 
     @GetMapping
+    public List<TestDto> getAllTests() {
+        return testService.getAllTests();
+    }
+
+    @GetMapping("/upcoming")
     public List<TestDto> getUpcomingTests() {
         return testService.getUpcomingTests();
     }

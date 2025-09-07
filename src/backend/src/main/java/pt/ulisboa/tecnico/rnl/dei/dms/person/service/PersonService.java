@@ -95,9 +95,6 @@ public class PersonService {
 			studentEnrollmentRepository.delete(enrollment);
 		}
 		
-		// TODO: Handle cases where person is a main teacher or assistant teacher
-		// You might want to prevent deletion or reassign curricularUnits
-		
 		// Finally, delete the person
 		personRepository.deleteById(id);
 	}

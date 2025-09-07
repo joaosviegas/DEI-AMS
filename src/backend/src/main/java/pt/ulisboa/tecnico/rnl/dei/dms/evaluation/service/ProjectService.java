@@ -100,6 +100,13 @@ public class ProjectService {
     }
 
     @Transactional
+    public List<ProjectDto> getAllProjects() {
+        return projectRepository.findAll().stream()
+                .map(ProjectDto::new)
+                .toList();
+    }
+
+    @Transactional
     public ProjectDto getProject(long id) {
         return new ProjectDto(fetchProjectOrThrow(id));
     }

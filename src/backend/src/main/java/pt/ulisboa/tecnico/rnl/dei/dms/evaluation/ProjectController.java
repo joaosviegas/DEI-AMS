@@ -28,6 +28,11 @@ public class ProjectController {
 
     // Project CRUD endpoints
 
+    @GetMapping
+    public List<ProjectDto> getAllProjects() {
+        return projectService.getAllProjects();
+    }
+
     @GetMapping("/{id}")
     public ProjectDto getProject(@PathVariable long id) {
         return projectService.getProject(id);

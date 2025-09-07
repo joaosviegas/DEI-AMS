@@ -146,4 +146,11 @@ public class TestService {
                 .map(TestDto::new)
                 .toList();
     }
+
+    @Transactional
+    public List<TestDto> getAllTests() {
+        return testRepository.findAll().stream()
+                .map(TestDto::new)
+                .toList();
+    }
 }

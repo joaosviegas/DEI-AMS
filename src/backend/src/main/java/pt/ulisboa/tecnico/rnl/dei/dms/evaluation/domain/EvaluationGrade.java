@@ -44,6 +44,39 @@ public class EvaluationGrade {
     @Column(name = "revision_requested_at")
     private LocalDateTime revisionRequestedAt;
 
+    @Column(name = "teacher_suggestion")
+    private Double teacherSuggestion;
+
+    @Column(name = "teacher_justification")
+    private String teacherJustification;
+
+    @Column(name = "teacher_revision_submitted_at")
+    private LocalDateTime teacherRevisionSubmittedAt;
+
+    @Column(name = "final_grade")
+    private Double finalGrade;
+
+    @Column(name = "final_justification")
+    private String finalJustification;
+
+    @Column(name = "final_approved")
+    private Boolean finalApproved;
+
+    @Column(name = "final_decision_at")
+    private LocalDateTime finalDecisionAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "revision_status")
+    private RevisionStatus revisionStatus = RevisionStatus.NONE;
+
+    public enum RevisionStatus {
+        NONE,
+        REQUESTED,
+        TEACHER_SUBMITTED,
+        APPROVED,
+        REJECTED
+    }
+
     public EvaluationGrade(Evaluation evaluation, StudentEnrollment studentEnrollment, 
                           Double grade) {
         this.evaluation = evaluation;
@@ -59,6 +92,58 @@ public class EvaluationGrade {
         this.revisionRequested = true;
         this.revisionReason = reason;
         this.revisionRequestedAt = LocalDateTime.now();
+        this.revisionStatus = RevisionStatus.REQUESTED;
+    }
+
+    /**
+     * Submit teacher revision with suggested grade and justification
+     */
+    public void submitTeacherRevision(Double suggestedGrade, String justification) {
+        if (!this.revisionRequested) {
+            throw new IllegalStateException("No revision requested for this grade");
+        }
+        this.teacherSuggestion = suggestedGrade;
+        this.teacherJustification = justification;
+        this.teacherRevisionSubmittedAt = LocalDateTime.now();
+        this.revisionStatus = RevisionStatus.TEACHER_SUBMITTED;
+    }
+
+    /**
+     * Approve final revision and apply the final grade
+     */
+    public void approveFinalRevision(String finalJustification, Double finalGrade) {
+        if (this.revisionStatus != RevisionStatus.TEACHER_SUBMITTED) {
+            throw new IllegalStateException("Cannot approve revision without teacher submission");
+        }
+        this.finalJustification = finalJustification;
+        this.finalGrade = finalGrade;
+        this.finalApproved = true;
+        this.finalDecisionAt = LocalDateTime.now();
+        this.revisionStatus = RevisionStatus.APPROVED;
+        
+        // Update the actual grade to the approved final grade
+        this.grade = finalGrade;
+        this.gradedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Reject final revision
+     */
+    public void rejectFinalRevision(String finalJustification) {
+        if (this.revisionStatus != RevisionStatus.TEACHER_SUBMITTED) {
+            throw new IllegalStateException("Cannot reject revision without teacher submission");
+        }
+        this.finalJustification = finalJustification;
+        this.finalApproved = false;
+        this.finalDecisionAt = LocalDateTime.now();
+        
+        // Reset to REQUESTED status so teacher can review again
+        this.revisionStatus = RevisionStatus.REQUESTED;
+        
+        // Clear teacher review data so they can submit a new review
+        this.teacherSuggestion = null;
+        this.teacherJustification = null;
+        this.teacherRevisionSubmittedAt = null;
     }
 
     /**
@@ -68,6 +153,7 @@ public class EvaluationGrade {
         this.revisionRequested = false;
         this.revisionReason = null;
         this.revisionRequestedAt = null;
+        this.revisionStatus = RevisionStatus.NONE;
     }
 
     /**
@@ -84,6 +170,72 @@ public class EvaluationGrade {
      */
     public boolean isPassing() {
         return grade != null && grade >= 10.0;
+    }
+
+    /**
+     * Check if this grade has a pending revision request
+     */
+    public boolean hasPendingRevision() {
+        return revisionStatus == RevisionStatus.REQUESTED || 
+               revisionStatus == RevisionStatus.TEACHER_SUBMITTED;
+    }
+
+    /**
+     * Check if teacher has submitted a revision
+     */
+    public boolean hasTeacherRevision() {
+        return revisionStatus == RevisionStatus.TEACHER_SUBMITTED;
+    }
+
+    /**
+     * Check if revision has been finalized (approved or rejected)
+     */
+    public boolean isRevisionFinalized() {
+        return revisionStatus == RevisionStatus.APPROVED || 
+               revisionStatus == RevisionStatus.REJECTED;
+    }
+
+    /**
+     * Get the current effective grade (final grade if approved, otherwise original grade)
+     */
+    public Double getEffectiveGrade() {
+        if (revisionStatus == RevisionStatus.APPROVED && finalGrade != null) {
+            return finalGrade;
+        }
+        return grade;
+    }
+
+    // Getters for revision workflow fields
+    public RevisionStatus getRevisionStatus() {
+        return revisionStatus;
+    }
+
+    public Double getTeacherSuggestedGrade() {
+        return teacherSuggestion;
+    }
+
+    public String getTeacherJustification() {
+        return teacherJustification;
+    }
+
+    public LocalDateTime getTeacherReviewedAt() {
+        return teacherRevisionSubmittedAt;
+    }
+
+    public Double getFinalGrade() {
+        return finalGrade;
+    }
+
+    public String getFinalJustification() {
+        return finalJustification;
+    }
+
+    public LocalDateTime getFinalApprovedAt() {
+        return finalDecisionAt;
+    }
+
+    public Boolean getFinalApproved() {
+        return finalApproved;
     }
 
     @Override

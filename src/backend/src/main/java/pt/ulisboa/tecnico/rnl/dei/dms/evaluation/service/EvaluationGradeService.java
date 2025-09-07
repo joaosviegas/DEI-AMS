@@ -143,6 +143,43 @@ public class EvaluationGradeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<EvaluationGradeDto> getAllRevisionRequests() {
+        return evaluationGradeRepository.findAllGradedEvaluations().stream()
+                .map(EvaluationGradeDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public EvaluationGradeDto submitTeacherRevision(Long gradeId, Double suggestedGrade, String justification) {
+        EvaluationGrade grade = fetchEvaluationGradeOrThrow(gradeId);
+        grade.submitTeacherRevision(suggestedGrade, justification);
+        return new EvaluationGradeDto(evaluationGradeRepository.save(grade));
+    }
+
+    @Transactional
+    public EvaluationGradeDto approveFinalRevision(Long gradeId, String finalJustification, Boolean approved, Double finalGrade) {
+        EvaluationGrade grade = fetchEvaluationGradeOrThrow(gradeId);
+        
+        if (approved && finalGrade != null) {
+            // Approve the revision and update the grade
+            grade.approveFinalRevision(finalJustification, finalGrade);
+        } else {
+            // Reject the revision and send back to teacher review
+            grade.rejectFinalRevision(finalJustification);
+        }
+        
+        EvaluationGrade savedGrade = evaluationGradeRepository.save(grade);
+        
+        // Check and update student completion if grade was approved
+        if (approved && finalGrade != null) {
+            StudentEnrollment studentEnrollment = savedGrade.getStudentEnrollment();
+            checkAndUpdateStudentCompletion(studentEnrollment);
+        }
+        
+        return new EvaluationGradeDto(savedGrade);
+    }
+    
     /**
      * Checks if a student has completed all evaluations (100% weight) and updates their enrollment
      */

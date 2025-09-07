@@ -33,4 +33,13 @@ public interface EvaluationGradeRepository extends JpaRepository<EvaluationGrade
     // Find all grades with pending revision requests for a specific curricular unit
     @Query("SELECT eg FROM EvaluationGrade eg WHERE eg.revisionRequested = true AND eg.evaluation.curricularUnit.id = :curricularUnitId")
     List<EvaluationGrade> findPendingRevisionsByCurricularUnit(@Param("curricularUnitId") Long curricularUnitId);
+
+    // Find all graded evaluations (evaluations that have a grade assigned)
+    @Query("SELECT eg FROM EvaluationGrade eg " +
+           "JOIN FETCH eg.evaluation e " +
+           "JOIN FETCH e.curricularUnit cu " +
+           "JOIN FETCH eg.studentEnrollment se " +
+           "JOIN FETCH se.student s " +
+           "WHERE eg.grade IS NOT NULL")
+    List<EvaluationGrade> findAllGradedEvaluations();
 }

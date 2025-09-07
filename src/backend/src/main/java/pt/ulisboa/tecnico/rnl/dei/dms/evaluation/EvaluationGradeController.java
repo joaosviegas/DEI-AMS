@@ -44,4 +44,26 @@ public class EvaluationGradeController {
     public List<EvaluationGradeDto> getPendingRevisions() {
         return evaluationGradeService.getPendingRevisions();
     }
+
+    @GetMapping("/revision-requests")
+    public List<EvaluationGradeDto> getAllRevisionRequests() {
+        return evaluationGradeService.getAllRevisionRequests();
+    }
+
+    @PutMapping("/{gradeId}/teacher-revision")
+    public EvaluationGradeDto submitTeacherRevision(
+            @PathVariable Long gradeId,
+            @RequestParam Double suggestedGrade,
+            @RequestParam String justification) {
+        return evaluationGradeService.submitTeacherRevision(gradeId, suggestedGrade, justification);
+    }
+
+    @PutMapping("/{gradeId}/final-approval")
+    public EvaluationGradeDto approveFinalRevision(
+            @PathVariable Long gradeId,
+            @RequestParam String justification,
+            @RequestParam Boolean approved,
+            @RequestParam(required = false) Double finalGrade) {
+        return evaluationGradeService.approveFinalRevision(gradeId, justification, approved, finalGrade);
+    }
 }

@@ -10,5 +10,5 @@ services:
   mailcrab:
     image: marlonb/mailcrab:latest
     ports:
-      - 1080:1080 # Web UI
-      - 1025:1025 # SMTP
+      - 1080:1080
+      - 1025:1025

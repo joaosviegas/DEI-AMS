@@ -84,10 +84,27 @@ To run the frontend, run the following command:
 npm run dev
 ```
 
+## MailCrab (Email Testing)
+
+The project uses **[MailCrab](https://github.com/marlonb/mailcrab)** for local email testing.
+
+- MailCrab runs automatically with `docker compose up`.  
+- By default, it is available at:  
+  - **Web UI:** [http://localhost:1080](http://localhost:1080)  
+  - **SMTP Server:** `localhost:1025`
+
+All emails sent by the backend will appear in the MailCrab web interface.
+
 ## Access the Database
 
 In order to access the database, you can use the following command (if you're using the provided Docker Compose file, `PORT` should be `7654`, `USER` should be `postgres` and `DB_NAME` should be `deidb`):
 
 ```bash
 psql -h localhost -p <PORT> -U <USER> <DB_NAME>
+```
+
+To populate the database use the following command:
+
+```bash
+psql -h localhost -p 7654 -U postgres -d deidb < populate.sql
 ```

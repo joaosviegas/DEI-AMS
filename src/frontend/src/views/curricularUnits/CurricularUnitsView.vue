@@ -50,13 +50,14 @@
 
     <template v-slot:[`item.actions`]="{ item }">
       <!-- View Details - accessible to everyone -->
-      <v-icon @click="viewDetails(item)" class="mr-2" tonal>mdi-eye</v-icon>
-      
+      <v-icon @click="viewDetails(item)" class="mr-2" title="Ver Detalhes" tonal>mdi-eye</v-icon>
+
       <!-- Add People - only for main teacher of this UC -->
       <v-icon 
         v-if="canAddPeople(item)" 
         @click="addPeople(item)" 
-        class="mr-2" 
+        class="mr-2"
+        title="Gerir Pessoas"
         tonal
       >
         mdi-account-edit
@@ -64,8 +65,8 @@
       
       <!-- Edit and Delete - admin only -->
       <template v-if="isAdmin">
-        <v-icon @click="editCurricularUnit(item)" class="mr-2" tonal>mdi-pencil</v-icon>
-        <v-icon @click="deleteCurricularUnit(item)" tonal>mdi-delete</v-icon>
+        <v-icon @click="editCurricularUnit(item)" class="mr-2" title="Adicionar UC" tonal>mdi-pencil</v-icon>
+        <v-icon @click="deleteCurricularUnit(item)" class="mr-2" title="Remover UC" tonal>mdi-delete</v-icon>
       </template>
     </template>
   </v-data-table>

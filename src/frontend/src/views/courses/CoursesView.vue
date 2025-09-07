@@ -28,8 +28,8 @@
     no-data-text="Sem cursos a apresentar."
   >
     <template v-slot:[`item.actions`]="{ item }" v-if="isAdmin">
-      <v-icon @click="editCourse(item)" class="mr-2" tonal>mdi-pencil</v-icon>
-      <v-icon @click="deleteCourse(item)" tonal>mdi-delete</v-icon>
+      <v-icon @click="editCourse(item)" class="mr-2" title="Editar Curso" tonal>mdi-pencil </v-icon>
+      <v-icon @click="deleteCourse(item)" title="Remover Curso" tonal>mdi-delete</v-icon>
     </template>
   </v-data-table>
 

@@ -254,7 +254,7 @@
                   variant="text"
                   size="small"
                   @click="openEditEvaluationDialog(item)"
-                  title="Editar"
+                  title="Editar Teste"
                   class="mr-1"
                 ></v-btn>
                 <v-btn 
@@ -263,7 +263,7 @@
                   variant="text"
                   size="small"
                   @click="confirmDeleteTest(item)"
-                  title="Eliminar"
+                  title="Eliminar Teste"
                 ></v-btn>
               </template>
             </v-data-table>
@@ -307,7 +307,7 @@
                   variant="text"
                   size="small"
                   @click="downloadResource(item)"
-                  title="Descarregar"
+                  title="Descarregar Material"
                 ></v-btn>
                 <v-btn
                   v-if="canGradeEvaluations"
@@ -315,7 +315,7 @@
                   variant="text"
                   size="small"
                   @click="confirmDeleteResource(item)"
-                  title="Eliminar"
+                  title="Eliminar Material"
                 ></v-btn>
               </template>
             </v-data-table>

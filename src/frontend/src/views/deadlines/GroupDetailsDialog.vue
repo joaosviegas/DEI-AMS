@@ -86,7 +86,7 @@
           <v-divider class="mb-4"></v-divider>
           
           <div class="d-flex align-center mb-3">
-            <v-icon class="mr-2" color="primary">mdi-file-upload</v-icon>
+            <v-icon class="mr-2" color="primary" title="Submeter Projeto">mdi-file-upload</v-icon>
             <span class="text-h6">Status da Submissão</span>
           </div>
 

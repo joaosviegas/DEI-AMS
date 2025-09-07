@@ -382,6 +382,32 @@ export default class RemoteServices {
     })
     return httpClient.put(`/projects/${projectId}/groups/${groupId}/grade`, null, { params })
   }
+
+  // Revision Workflow methods
+  static async getRevisionRequests(): Promise<any[]> {
+    return httpClient.get(`/evaluation-grades/revision-requests`)
+  }
+
+  static async submitTeacherRevision(gradeId: number, data: { suggestedGrade: number, justification: string }): Promise<any> {
+    const params = new URLSearchParams({
+      suggestedGrade: data.suggestedGrade.toString(),
+      justification: data.justification
+    })
+    return httpClient.put(`/evaluation-grades/${gradeId}/teacher-revision`, null, { params })
+  }
+
+  static async approveFinalRevision(gradeId: number, data: { finalGrade: number | null, justification: string, approved: boolean }): Promise<any> {
+    const params = new URLSearchParams({
+      justification: data.justification,
+      approved: data.approved.toString()
+    })
+    
+    if (data.finalGrade !== null) {
+      params.append('finalGrade', data.finalGrade.toString())
+    }
+    
+    return httpClient.put(`/evaluation-grades/${gradeId}/final-approval`, null, { params })
+  }
 }
 
 httpClient.interceptors.request.use((request) => request, RemoteServices.handleError)

@@ -81,7 +81,7 @@
                 >
                   <v-card-text class="pb-2">
                     <div class="d-flex justify-space-between align-center mb-3">
-                      <h4 class="font-weight-medium">{{ group.name || 'Grupo sem nome' }}</h4>
+                      <h4 class="font-weight-medium">{{ 'Grupo ' + group.id || 'Grupo sem nome' }}</h4>
                       <v-chip color="primary" size="small" variant="outlined">
                         {{ group.members.length }} 
                         {{ group.members.length === 1 ? 'membro' : 'membros' }}

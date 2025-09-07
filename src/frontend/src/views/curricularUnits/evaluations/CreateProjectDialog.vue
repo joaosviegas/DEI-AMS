@@ -191,7 +191,7 @@ const create = async () => {
       submissionDeadline: newProject.value.submissionDeadline,
       weight: newProject.value.weight / 100, // Convert percentage to decimal
       description: newProject.value.description,
-      allowedExtensions: 'py,java,zip,pdf,c,cpp', // Default allowed extensions
+      allowedExtensions: 'py,c,zip,java', // Default allowed extensions
       maxFileSize: (newProject.value.maxFileSize || 10) * 1024 * 1024 // Convert MB to bytes
     }
     

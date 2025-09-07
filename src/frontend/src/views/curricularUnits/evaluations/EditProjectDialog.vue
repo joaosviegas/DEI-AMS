@@ -139,7 +139,7 @@ const editProject = ref({
   description: '',
   maxGroupSize: 1,
   maxFileSize: 10,
-  allowedExtensions: 'py,java,zip,pdf,c,cpp'
+  allowedExtensions: 'py,java,zip,c'
 })
 
 // Store original values to detect changes
@@ -150,7 +150,7 @@ const originalProject = ref({
   description: '',
   maxGroupSize: 1,
   maxFileSize: 10,
-  allowedExtensions: 'py,java,zip,pdf,c,cpp'
+  allowedExtensions: 'py,java,zip,c'
 })
 
 const localDialog = computed({
@@ -208,7 +208,7 @@ const loadProjectData = () => {
     description: project.description || '',
     maxGroupSize: project.maxGroupSize || 1,
     maxFileSize: maxFileSizeMB,
-    allowedExtensions: project.allowedExtensions || 'py,java,zip,pdf,c,cpp'
+    allowedExtensions: project.allowedExtensions || 'py,java,zip,c'
   }
   
   // Store original values

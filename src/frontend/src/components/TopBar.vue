@@ -15,6 +15,7 @@ const navbarItems = computed(() => [
   {name: 'Início', path: '/', icon: 'mdi-home', roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR']},
   { name: 'UCs', path: '/curricular-units', icon: 'mdi-school', roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR'] },
   { name: 'Prazos', path: '/deadlines', icon: 'mdi-clock-alert-outline', roles: ['STUDENT'] },
+  { name: 'Alunos', path: '/students', icon: 'mdi-school-outline', roles: ['MAIN_TEACHER', 'TEACHING_ASSISTANT'] },
   { name: "Cursos", path: "/courses", icon: "mdi-book-open-variant", roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR'] },
   { name: 'Pessoal', path: '/people', icon: 'mdi-account-group', roles: ['ADMINISTRATOR'] },
   { name: 'Estatísticas', path: '/statistics', icon: 'mdi-chart-bar', roles: ['STUDENT', 'TEACHING_ASSISTANT', 'MAIN_TEACHER', 'ADMINISTRATOR'] },

@@ -147,19 +147,16 @@ async function getPeople() {
   people.splice(0, people.length)
   people.push(...(await RemoteService.getPeople()))
   loading.value = false
-  console.log(people)
 }
 
 // Open the edit dialog
 const editPerson = (person: PersonDto) => {
-  console.log('Editing person:', person)
   selectedPerson.value = person
   showEditDialog.value = true
 }
 
 // Open the delete dialog
 const deletePerson = (person: PersonDto) => {
-  console.log('Preparing to delete person:', person)
   selectedPerson.value = person
   showDeleteDialog.value = true
 }

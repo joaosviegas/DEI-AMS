@@ -26,7 +26,7 @@
                 NOME DO GRUPO
               </div>
               <div class="text-h6">
-                {{ group.name || (group.members[0]?.name ? `${group.members[0]?.name}` : 'Sem nome') }}
+                {{ 'Grupo ' + group.id || (group.members[0]?.name ? `${group.members[0]?.name}` : 'Sem nome') }}
               </div>
             </v-col>
             <v-col cols="6">

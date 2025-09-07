@@ -262,7 +262,6 @@ const loadProjectGroups = async () => {
   loading.value = true
   try {
     projectGroups.value = await RemoteService.getProjectGroups(props.project.id)
-    console.log('Loaded project groups:', projectGroups.value)
   } catch (error) {
     console.error('Error loading project groups:', error)
     projectGroups.value = []

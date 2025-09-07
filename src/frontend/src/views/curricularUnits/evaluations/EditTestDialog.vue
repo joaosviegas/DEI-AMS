@@ -208,8 +208,7 @@ const saveTest = async () => {
     localDialog.value = false
     resetForm()
   } catch (error: any) {
-    // Error is already handled by the interceptor and shown to user
-    // Just catch it to prevent uncaught promise warning
+
     console.log('Test update failed:', error.message)
   } finally {
     loading.value = false

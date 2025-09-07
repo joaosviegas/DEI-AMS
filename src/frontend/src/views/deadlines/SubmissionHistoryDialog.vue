@@ -396,7 +396,6 @@ const downloadSubmission = async (submission: ProjectSubmissionDto) => {
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
     
-    console.log('Submission downloaded successfully:', submission.originalFilename)
   } catch (error) {
     console.error('Error downloading submission:', error)
     // You could show a toast notification here instead

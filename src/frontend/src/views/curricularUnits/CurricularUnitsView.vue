@@ -200,7 +200,6 @@ async function getCurricularUnits() {
     curricularUnits.splice(0, curricularUnits.length)
     curricularUnits.push(...(await RemoteService.getCurricularUnits()))
     loading.value = false
-    console.log('Curricular Units loaded:', curricularUnits)
   } catch (error) {
     console.error('Error loading curricular units:', error)
     loading.value = false
@@ -227,19 +226,16 @@ const getSemesterColor = (semester: string) => {
 
 // Action handlers
 const viewDetails = (curricularUnit: CurricularUnitDto) => {
-  console.log('Viewing details for:', curricularUnit)
   selectedCurricularUnit.value = curricularUnit
   showDetailsDialog.value = true
 }
 
 const editCurricularUnit = (curricularUnit: CurricularUnitDto) => {
-  console.log('Editing curricular unit:', curricularUnit)
   selectedCurricularUnit.value = curricularUnit
   showEditDialog.value = true
 }
 
 const deleteCurricularUnit = (curricularUnit: CurricularUnitDto) => {
-  console.log('Preparing to delete curricular unit:', curricularUnit)
   selectedCurricularUnit.value = curricularUnit
   showDeleteDialog.value = true
 }
@@ -269,15 +265,11 @@ const canAddPeople = (curricularUnit: CurricularUnitDto) => {
 }
 
 const addPeople = (curricularUnit: CurricularUnitDto) => {
-  console.log('Adding people to curricular unit:', curricularUnit)
   selectedCurricularUnit.value = curricularUnit
   showAddPeopleDialog.value = true
 }
 
 const updateSelectedCurricularUnit = (updatedCurricularUnit: CurricularUnitDto) => {
-  console.log('Updating selected curricular unit:', updatedCurricularUnit)
-  console.log('Current students:', selectedCurricularUnit.value?.studentEnrollments?.length || 0)
-  console.log('New students:', updatedCurricularUnit.studentEnrollments?.length || 0)
 
   // Update the selected curricular unit with the latest data
   selectedCurricularUnit.value = updatedCurricularUnit
@@ -287,12 +279,9 @@ const updateSelectedCurricularUnit = (updatedCurricularUnit: CurricularUnitDto) 
   if (index !== -1) {
     Object.assign(curricularUnits[index], updatedCurricularUnit)
   }
-  
-  console.log('Updated selected curricular unit students:', selectedCurricularUnit.value?.studentEnrollments?.length || 0)
 }
 
 const handleCurricularUnitUpdated = async () => {
-  console.log('Curricular unit updated, refreshing data...')
   const currentCurricularUnitId = selectedCurricularUnit.value?.id
   
   // Refresh all curricular units data
@@ -303,7 +292,6 @@ const handleCurricularUnitUpdated = async () => {
     const updatedCU = curricularUnits.find(cu => cu.id === currentCurricularUnitId)
     if (updatedCU) {
       selectedCurricularUnit.value = updatedCU
-      console.log('Updated student enrollment data for curricular unit:', updatedCU.name)
     }
   }
 }

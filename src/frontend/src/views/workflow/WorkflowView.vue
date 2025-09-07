@@ -38,15 +38,15 @@
       <v-card>
         <v-tabs v-model="activeTab" align-tabs="center" color="primary">
           <v-tab value="phase1" prepend-icon="mdi-account-school">
-            {{ isStudent ? 'Minhas Avaliações' : 'Fase 1: Solicitações⠀' }}
+            {{ isStudent ? 'Minhas Avaliações⠀' : 'Solicitações⠀' }}
             <v-badge v-if="getPhaseCount('phase1') > 0" :content="getPhaseCount('phase1')" color="primary" class="ml-2"></v-badge>
           </v-tab>
           <v-tab v-if="isTeacher" value="phase2" prepend-icon="mdi-account">
-            Fase 2: Revisão Docente⠀
+            Revisão Docente⠀
             <v-badge v-if="getPhaseCount('phase2') > 0" :content="getPhaseCount('phase2')" color="warning" class="ml-2"></v-badge>
           </v-tab>
           <v-tab v-if="isMainTeacher" value="phase3" prepend-icon="mdi-account-tie">
-            Fase 3: Aprovação Final⠀
+            Aprovação Final⠀
             <v-badge v-if="getPhaseCount('phase3') > 0" :content="getPhaseCount('phase3')" color="success" class="ml-2"></v-badge>
           </v-tab>
         </v-tabs>
@@ -1084,6 +1084,8 @@ const fetchRevisionRequests = async () => {
 onMounted(async () => {
   await fetchRevisionRequests()
 })
+
+
 </script>
 
 <style scoped>

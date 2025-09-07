@@ -504,7 +504,6 @@ const saveAllGrades = async () => {
     // Emit event to notify parent component that grades were updated
     emit('grade-updated')
     
-    console.log('Individual grades saved successfully!')
   } catch (error) {
     console.error('Error saving grades:', error)
     alert('Erro ao guardar as notas. Tente novamente.')

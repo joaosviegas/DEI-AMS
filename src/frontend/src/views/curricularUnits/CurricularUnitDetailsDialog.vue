@@ -601,11 +601,6 @@ const getTestCorrection = (evaluationId: number): ResourceDto | null => {
   return testFiles.value[evaluationId]?.correction || null
 }
 
-// Debug computed property
-const debugTestFiles = computed(() => {
-  console.log('Current testFiles:', testFiles.value)
-  return testFiles.value
-})
 
 // Evaluation management functions
 const loadEvaluations = async () => {
@@ -710,10 +705,8 @@ const loadResources = async () => {
   
   loadingResources.value = true
   try {
-    console.log('Loading resources for curricular unit:', curricularUnit.value.id)
     // Only load materials since students won't upload submissions here
     const materials = await RemoteService.getMaterials(curricularUnit.value.id)
-    console.log('Loaded materials:', materials)
     
     // Load test files tracking first with all materials (before filtering)
     loadTestFilesFromStorage(materials)
@@ -730,8 +723,6 @@ const loadResources = async () => {
     // Filter out test files from the general resources
     allResources.value = materials.filter(resource => !testFileIds.has(resource.id))
     
-    console.log('Resources updated in component (filtered):', allResources.value)
-    console.log('Test files:', testFiles.value)
   } catch (error) {
     console.error('Error loading resources:', error)
   } finally {
@@ -744,7 +735,6 @@ const triggerFileUpload = () => {
 }
 
 const triggerTestStatementUpload = (evaluationId: number) => {
-  console.log('triggerTestStatementUpload called with evaluationId:', evaluationId)
   currentUploadEvaluationId.value = evaluationId
   testStatementInput.value?.click()
 }
@@ -764,20 +754,15 @@ const handleFileUpload = async (event: Event) => {
   }
   
   try {
-    console.log('Uploading file:', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type)
-    console.log('Curricular Unit ID:', curricularUnit.value.id)
-    
+  
     const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
-    console.log('Upload response:', response)
     
     await loadResources() // Refresh the list
-    console.log('Resources reloaded after upload')
     
     // Clear the input
     if (fileInput.value) {
       fileInput.value.value = ''
     }
-    console.log('File uploaded successfully')
   } catch (error) {
     console.error('Error uploading file:', error)
   }
@@ -795,7 +780,6 @@ const handleTestStatementUpload = async (event: Event) => {
   const evaluationId = currentUploadEvaluationId.value
   
   try {
-    console.log('Uploading test statement for evaluation:', evaluationId, 'file:', file.name)
     
     // If there's already a test statement file for this evaluation, delete it first
     const existingStatement = getTestStatement(evaluationId)
@@ -804,7 +788,6 @@ const handleTestStatementUpload = async (event: Event) => {
     }
     
     const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
-    console.log('Test statement upload response:', response)
     
     // Get all materials to find the uploaded file
     const materials = await RemoteService.getMaterials(curricularUnit.value.id)
@@ -813,7 +796,6 @@ const handleTestStatementUpload = async (event: Event) => {
     const uploadedFile = materials.find(resource => 
       resource.fileName.endsWith(file.name) || resource.name === file.name
     )
-    console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
     
     if (uploadedFile) {
       if (!testFiles.value[evaluationId]) {
@@ -821,7 +803,6 @@ const handleTestStatementUpload = async (event: Event) => {
       }
       testFiles.value[evaluationId].statement = uploadedFile
       saveTestFilesToStorage()
-      console.log('Saved to storage, current testFiles:', testFiles.value)
     } else {
       console.error('Could not find uploaded file in resources!')
     }
@@ -853,7 +834,6 @@ const handleTestCorrectionUpload = async (event: Event) => {
   const evaluationId = currentUploadEvaluationId.value
   
   try {
-    console.log('Uploading test correction for evaluation:', evaluationId, 'file:', file.name)
     
     // If there's already a test correction file for this evaluation, delete it first
     const existingCorrection = getTestCorrection(evaluationId)
@@ -862,7 +842,6 @@ const handleTestCorrectionUpload = async (event: Event) => {
     }
     
     const response = await RemoteService.uploadFile(curricularUnit.value.id, file, 'MATERIAL')
-    console.log('Test correction upload response:', response)
     
     // Get all materials to find the uploaded file
     const materials = await RemoteService.getMaterials(curricularUnit.value.id)
@@ -871,16 +850,13 @@ const handleTestCorrectionUpload = async (event: Event) => {
     const uploadedFile = materials.find(resource => 
       resource.fileName.endsWith(file.name) || resource.name === file.name
     )
-    console.log('Looking for uploaded file:', file.name, 'found:', uploadedFile)
     
     if (uploadedFile) {
       if (!testFiles.value[evaluationId]) {
         testFiles.value[evaluationId] = {}
       }
       testFiles.value[evaluationId].correction = uploadedFile
-      console.log('Tracked correction file for evaluation:', evaluationId, uploadedFile)
       saveTestFilesToStorage()
-      console.log('Saved to storage, current testFiles:', testFiles.value)
     } else {
       console.error('Could not find uploaded file in resources!')
     }
@@ -893,7 +869,6 @@ const handleTestCorrectionUpload = async (event: Event) => {
       testCorrectionInput.value.value = ''
     }
     currentUploadEvaluationId.value = null
-    console.log('Test correction uploaded successfully for evaluation:', evaluationId)
   } catch (error) {
     console.error('Error uploading test correction:', error)
     currentUploadEvaluationId.value = null
@@ -921,7 +896,6 @@ const downloadResource = async (resource: ResourceDto) => {
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
     
-    console.log('File downloaded successfully')
   } catch (error) {
     console.error('Error downloading file:', error)
   }
@@ -979,7 +953,6 @@ const handleCurricularUnitUpdated = (updatedCU: CurricularUnitDto) => {
 // Watch for curricular unit changes to load evaluations and resources
 // Handle grade updates
 const handleGradeUpdated = () => {
-  console.log('Grade updated, emitting curricular-unit-updated event')
   emit('curricular-unit-updated')
 }
 

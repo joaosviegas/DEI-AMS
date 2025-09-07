@@ -278,28 +278,18 @@ const loadAvailableStudents = async () => {
     const people = await RemoteService.getPeople()
     const students = people.filter((person: PersonDto) => person.type === 'STUDENT')
     
-    // Debug the curricular unit data
-    console.log('Current curricularUnit prop:', props.curricularUnit)
-    console.log('StudentEnrollments from prop:', props.curricularUnit?.studentEnrollments)
-    console.log('StudentEnrollments length:', props.curricularUnit?.studentEnrollments?.length)
-    
     // Filter out current students (from enrollments)
     const currentStudentIds = new Set(
       props.curricularUnit?.studentEnrollments
         ?.map(enrollment => {
-          console.log('Processing enrollment:', enrollment)
           return enrollment.student?.id
         })
         ?.filter(id => id !== undefined) || []
     )
     
-    console.log('Current enrolled student IDs:', Array.from(currentStudentIds))
-    console.log('Total students found:', students.length)
-    
     availableStudents.value = students
       .filter(student => {
         const isAlreadyEnrolled = currentStudentIds.has(student.id)
-        console.log(`Student ${student.name} (${student.id}): already enrolled = ${isAlreadyEnrolled}`)
         return !isAlreadyEnrolled
       })
       .map((student: PersonDto) => ({
@@ -307,7 +297,6 @@ const loadAvailableStudents = async () => {
         value: student.id!
       }))
       
-    console.log('Available students after filtering:', availableStudents.value.length)
   } catch (error) {
     console.error('Error loading students:', error)
   } finally {
@@ -408,7 +397,6 @@ const removeStudent = async (studentId: number) => {
   if (!props.curricularUnit?.id) return
 
   try {
-    console.log('Removing student:', studentId, 'from curricular unit:', props.curricularUnit.id)
     
     // Unenroll the student and get the updated curricular unit
     await RemoteService.unenrollStudent(props.curricularUnit.id, studentId)

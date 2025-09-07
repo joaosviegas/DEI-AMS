@@ -274,8 +274,6 @@ const update = async () => {
     emit('project-updated')
     localDialog.value = false
   } catch (error: any) {
-    // Error is already handled by the interceptor and shown to user
-    // Just catch it to prevent uncaught promise warning
     console.log('Project update failed:', error.message)
   } finally {
     loading.value = false

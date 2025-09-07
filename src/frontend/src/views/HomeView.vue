@@ -185,6 +185,12 @@ const features = computed(() => {
           //route: TODO
         },
         {
+          title: 'Alunos',
+          description: 'Consulte informações sobre os Alunos das suas UCs.',
+          icon: 'mdi-account-group',
+          route: '/students'
+        },
+        {
           title: 'Cursos',
           description: 'Consulte informações sobre os cursos e gestão das suas pessoas.',
           icon: 'mdi-book-multiple',
@@ -215,7 +221,7 @@ const features = computed(() => {
           title: 'Alunos',
           description: 'Consulte informações sobre os Alunos das suas UCs.',
           icon: 'mdi-account-group',
-          route: '/people'
+          route: '/students'
         },
         {
           title: 'Cursos',

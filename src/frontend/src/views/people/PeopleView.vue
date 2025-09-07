@@ -43,8 +43,8 @@
       </v-chip>
     </template>
     <template v-slot:[`item.actions`]="{ item }" v-if="isAdmin">
-      <v-icon @click="editPerson(item)" class="mr-2">mdi-pencil</v-icon>
-      <v-icon @click="deletePerson(item)">mdi-delete</v-icon>
+      <v-icon @click="editPerson(item)" class="mr-2" title="Editar Pessoa">mdi-pencil</v-icon>
+      <v-icon @click="deletePerson(item)" title="Remover Pessoa">mdi-delete</v-icon>
     </template>
 
   </v-data-table>
@@ -176,7 +176,7 @@ const executeDeletePerson = async () => {
     selectedPerson.value = undefined
   } catch (error) {
     console.error('Error deleting person:', error)
-    // TODO: Show error message to user
+    alert('Erro ao eliminar pessoa. Por favor, tente novamente.')
   }
 }
 

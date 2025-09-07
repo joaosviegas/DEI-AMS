@@ -463,13 +463,11 @@ const loadData = async () => {
                 const submissions = await RemoteService.getGroupSubmissions(project.id, group.id)
                 groupSubmissions.value[`${project.id}-${group.id}`] = submissions
               } catch (error) {
-                console.warn('Could not load submissions for group', group.id, error)
                 groupSubmissions.value[`${project.id}-${group.id}`] = []
               }
             }
           }
         } catch (error) {
-          console.warn('Could not load groups for project', project.id, error)
           projectGroups.value[project.id] = []
         }
       }

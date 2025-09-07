@@ -155,7 +155,7 @@ const executeDeleteCourse = async () => {
     selectedCourse.value = undefined
   } catch (error) {
     console.error('Error deleting course:', error)
-    // TODO: Show error message to user
+    alert('Erro ao eliminar curso. Por favor, tente novamente.')
   }
 }
 

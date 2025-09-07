@@ -65,7 +65,7 @@
       
       <!-- Edit and Delete - admin only -->
       <template v-if="isAdmin">
-        <v-icon @click="editCurricularUnit(item)" class="mr-2" title="Adicionar UC" tonal>mdi-pencil</v-icon>
+        <v-icon @click="editCurricularUnit(item)" class="mr-2" title="Editar UC" tonal>mdi-pencil</v-icon>
         <v-icon @click="deleteCurricularUnit(item)" class="mr-2" title="Remover UC" tonal>mdi-delete</v-icon>
       </template>
     </template>
@@ -255,8 +255,7 @@ const executeDeleteCurricularUnit = async () => {
     selectedCurricularUnit.value = undefined
   } catch (error) {
     console.error('Error deleting curricular unit:', error)
-    // TODO: Show error message to user
-  }
+    alert('Erro ao eliminar unidade curricular. Por favor, tente novamente.')}
 }
 
 // Permission check - only main teacher can add people to UC

@@ -408,6 +408,23 @@ export default class RemoteServices {
     
     return httpClient.put(`/evaluation-grades/${gradeId}/final-approval`, null, { params })
   }
+
+  // Calendar methods
+  static async getTests(): Promise<any[]> {
+    return httpClient.get('/tests')
+  }
+
+  static async getProjects(): Promise<any[]> {
+    return httpClient.get('/projects')
+  }
+
+  static async getAllEvaluations(): Promise<any[]> {
+    return httpClient.get('/evaluations/calendar')
+  }
+
+  static async notifyConflicts(conflicts: any[]): Promise<void> {
+    return httpClient.post('/evaluations/notify-conflicts', conflicts)
+  }
 }
 
 httpClient.interceptors.request.use((request) => request, RemoteServices.handleError)

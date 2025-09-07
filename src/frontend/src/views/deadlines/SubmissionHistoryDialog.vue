@@ -438,7 +438,6 @@ const loadSubmissions = async () => {
       const grades = await RemoteService.getEvaluationGrades(props.project.id)
       evaluationGrades.value = grades.map(grade => EvaluationGradeDto.fromBackend(grade))
     } catch (error) {
-      console.warn('Could not load evaluation grades:', error)
       evaluationGrades.value = []
     }
   } catch (error) {

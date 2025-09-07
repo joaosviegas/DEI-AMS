@@ -24,7 +24,7 @@
 
     <v-row>
       <v-col cols="12">
-        <h2 class="text-h5 mb-4 text-center">Funcionalidades Disponíveis</h2>
+        <h2 class="text-h5 mb-4 text-center">Funcionalidades Disponíveis:</h2>
       </v-col>
     </v-row>
 
@@ -93,11 +93,11 @@ const roleDescription = computed(() => {
     case 'ADMINISTRATOR':
       return 'Como Administrador, você tem acesso completo ao sistema para gerir pessoas, cursos, unidades curriculares e visualizar estatísticas.';
     case 'MAIN_TEACHER':
-      return 'Como Professor Regente, você pode gerir as suas unidades curriculares, adicionar professores assistentes e Alunos.';
+      return 'Como Professor Regente, você pode gerir as suas unidades curriculares, adicionar Professores Assistentes e Alunos.';
     case 'TEACHING_ASSISTANT':
       return 'Como Professor Assistente, você pode visualizar as unidades curriculares onde está envolvido e consultar informações dos Alunos.';
     case 'STUDENT':
-      return 'Como Aluno, você pode visualizar as suas unidades curriculares, professores e colegas de turma.';
+      return 'Como Aluno, você pode visualizar as suas unidades curriculares, avaliações, professores e colegas.';
     default:
       return 'Selecione um papel abaixo para acessar as funcionalidades do sistema.';
   }
@@ -173,20 +173,20 @@ const features = computed(() => {
     case 'MAIN_TEACHER':
       return [
         {
-          title: 'Minhas Unidades Curriculares',
-          description: 'Gerencie as UCs onde você é professor regente.',
+          title: 'Minhas UCs',
+          description: 'Consulte as UCs onde você é Professor Regente.',
           icon: 'mdi-school',
           route: '/curricular-units'
         },
-        {
-          title: 'Gestão de Pessoas',
-          description: 'Adicione professores assistentes e Alunos às suas UCs.',
-          icon: 'mdi-account-plus',
-          route: '/people'
+        {   
+          title: 'Workflow de Revisões',
+          description: 'Visualize as tarefas de correção que lhe faltam aprovar.',
+          icon: 'mdi-clipboard-edit',
+          //route: TODO
         },
         {
           title: 'Cursos',
-          description: 'Consulte informações sobre os cursos relacionados.',
+          description: 'Consulte informações sobre os cursos e gestão das suas pessoas.',
           icon: 'mdi-book-multiple',
           route: '/courses'
         },
@@ -205,6 +205,12 @@ const features = computed(() => {
           icon: 'mdi-school',
           route: '/curricular-units'
         },
+        {   
+          title: 'Workflow de Revisões',
+          description: 'Visualize as tarefas de correção que lhe foram atribuídas.',
+          icon: 'mdi-clipboard-edit',
+          //route: TODO
+        },
         {
           title: 'Alunos',
           description: 'Consulte informações sobre os Alunos das suas UCs.',
@@ -221,22 +227,28 @@ const features = computed(() => {
     case 'STUDENT':
       return [
         {
-          title: 'Minhas Unidades Curriculares',
+          title: 'Minhas UCs',
           description: 'Visualize as UCs onde você está inscrito.',
           icon: 'mdi-school',
           route: '/curricular-units'
         },
         {
-          title: 'Professores e Colegas',
-          description: 'Consulte informações sobre professores e colegas.',
-          icon: 'mdi-account-group',
-          route: '/people'
+          title: 'Prazos & Entregas',
+          description: 'Consulte as avaliações e as datas das mesmas.',
+          icon: 'mdi-clock-alert-outline',
+          route: '/deadlines'
         },
         {
-          title: 'Meu Curso',
-          description: 'Visualize informações sobre o seu curso.',
+          title: 'Cursos',
+          description: 'Visualize informações sobre cursos.',
           icon: 'mdi-book-multiple',
           route: '/courses'
+        },
+        {
+          title: 'Estatísticas',
+          description: 'Visualize estatísticas das suas unidades curriculares.',
+          icon: 'mdi-chart-bar',
+          route: '/statistics'
         }
       ];
     default:

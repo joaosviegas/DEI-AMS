@@ -426,17 +426,33 @@ const loadGrades = async () => {
   loading.value = true
   try {
     if (isGroupProject.value) {
-      // Load groups for group projects - groups already contain their finalGrade
+      // Load groups for group projects
       const groups = await RemoteService.getProjectGroups(props.evaluation.id)
       
-      // Map groups with their grades (finalGrade from ProjectGroupDto)
-      projectGroups.value = groups.map(group => ({
-        ...group,
-        grade: group.finalGrade, // Use the finalGrade from the group
-        changed: false
-      }))
+      // Load evaluation grades for all students in the UC to match with groups
+      const allGrades = await RemoteService.getEvaluationGrades(props.evaluation.id)
+      
+      // Map groups with their grades by finding the grade for the first member of each group
+      // (since in group projects, all members should have the same grade)
+      projectGroups.value = groups.map(group => {
+        let groupGrade = null
+        
+        // Find the grade for any member of this group
+        if (group.members && group.members.length > 0) {
+          const memberGrade = allGrades.find(grade => 
+            group.members.some(member => member.id === grade.student.id)
+          )
+          groupGrade = memberGrade?.grade || null
+        }
+        
+        return {
+          ...group,
+          grade: groupGrade,
+          changed: false
+        }
+      })
     } else {
-      // Load individual grades for tests or individual projects
+      // Load individual grades for tests
       const grades = await RemoteService.getEvaluationGrades(props.evaluation.id)
       studentGrades.value = grades.map(grade => ({
         id: grade.id,
@@ -452,6 +468,11 @@ const loadGrades = async () => {
         changed: false
       }))
     }
+    
+    // Reset change flags after loading
+    hasChanges.value = false
+    hasGroupGradeChanges.value = false
+    
   } catch (error) {
     console.error('Error loading grades:', error)
   } finally {
@@ -476,13 +497,17 @@ const saveAllGrades = async () => {
     }
     
     hasChanges.value = false
-    // Reload grades to get updated data
+    
+    // Reload grades to get updated data and ensure UI shows latest state
     await loadGrades()
     
     // Emit event to notify parent component that grades were updated
     emit('grade-updated')
+    
+    console.log('Individual grades saved successfully!')
   } catch (error) {
     console.error('Error saving grades:', error)
+    alert('Erro ao guardar as notas. Tente novamente.')
   } finally {
     saving.value = false
   }
@@ -493,14 +518,24 @@ const saveAllGroupGrades = async () => {
   
   saving.value = true
   try {
+    // Get all evaluation grades to find the studentEnrollmentIds
+    const allGrades = await RemoteService.getEvaluationGrades(props.evaluation.id)
+    
     const changedGroups = projectGroups.value.filter(item => item.changed && item.grade !== null)
     
     for (const group of changedGroups) {
-      await RemoteService.saveGroupGrade(
-        props.evaluation.id,
-        group.id,
-        group.grade
-      )
+      // For group projects, we need to save the grade for each member of the group
+      // Find the evaluation grade entries for each member and update them
+      for (const member of group.members) {
+        const memberGrade = allGrades.find(grade => grade.student.id === member.id)
+        if (memberGrade && memberGrade.studentEnrollmentId) {
+          await RemoteService.saveEvaluationGrade(
+            props.evaluation.id,
+            memberGrade.studentEnrollmentId,
+            group.grade
+          )
+        }
+      }
       group.changed = false
     }
     

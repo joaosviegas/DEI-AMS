@@ -139,7 +139,7 @@
                 >
                   <template v-slot:[`item.student`]="{ item }">
                     <div class="d-flex align-center">
-                      <v-avatar size="32" color="primary" class="mr-3">
+                      <v-avatar size="32" color="green" class="mr-3">
                         <span class="text-caption font-weight-bold text-white">
                           {{ getInitials(item.student?.name || '') }}
                         </span>
@@ -341,9 +341,17 @@ const filteredCurricularUnits = computed(() => {
 })
 
 const totalStudents = computed(() => {
-  return Object.values(studentEnrollments.value)
+  const uniqueStudents = new Set<string>()
+  
+  Object.values(studentEnrollments.value)
     .flat()
-    .length
+    .forEach(enrollment => {
+      if (enrollment.student?.type === 'STUDENT' && enrollment.student?.istId) {
+        uniqueStudents.add(enrollment.student.istId)
+      }
+    })
+  
+  return uniqueStudents.size
 })
 
 // Data loading

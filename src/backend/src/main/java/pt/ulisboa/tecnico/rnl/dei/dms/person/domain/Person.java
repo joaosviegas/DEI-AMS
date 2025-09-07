@@ -55,8 +55,5 @@ public class Person {
 	public Person(PersonDto personDto) {
 		this(personDto.name(), personDto.istId(), personDto.email(),
 				PersonType.valueOf(personDto.type().toUpperCase()));
-		System.out.println("PersonDto: " + personDto);
-		System.out.println("PersonType: " + personDto.type());
-
 	}
 }

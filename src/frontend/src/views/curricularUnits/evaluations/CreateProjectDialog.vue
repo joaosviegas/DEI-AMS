@@ -26,6 +26,20 @@
             </v-col>
             <v-col cols="12">
               <v-text-field
+                v-model="newProject.revisionDeadline"
+                label="Prazo de Revisão"
+                type="datetime-local"
+                :rules="[
+                  v => !!v || 'Prazo de revisão é obrigatório',
+                  v => !newProject.submissionDeadline || new Date(v) > new Date(newProject.submissionDeadline) || 'Prazo de revisão deve ser posterior ao prazo de entrega'
+                ]"
+                required
+                variant="outlined"
+                hint="Data limite para pedidos de revisão de nota"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
                 v-model.number="newProject.weight"
                 label="Peso (%)"
                 type="number"
@@ -134,6 +148,7 @@ const projectType = ref('individual')
 const newProject = ref({
   title: '',
   submissionDeadline: '',
+  revisionDeadline: '',
   weight: 0,
   description: '',
   maxGroupSize: 3,
@@ -148,9 +163,12 @@ const localDialog = computed({
 const isFormValid = computed(() => {
   const base = newProject.value.title.trim() !== '' &&
                newProject.value.submissionDeadline !== '' &&
+               newProject.value.revisionDeadline !== '' &&
                newProject.value.weight > 0 &&
                newProject.value.weight <= 100 &&
-               newProject.value.description.trim() !== ''
+               newProject.value.description.trim() !== '' &&
+               (!newProject.value.submissionDeadline || !newProject.value.revisionDeadline || 
+                new Date(newProject.value.revisionDeadline) > new Date(newProject.value.submissionDeadline))
                
   if (projectType.value === 'group') {
     return base && newProject.value.maxGroupSize >= 2 && newProject.value.maxGroupSize <= 10
@@ -163,6 +181,7 @@ const resetForm = () => {
   newProject.value = {
     title: '',
     submissionDeadline: '',
+    revisionDeadline: '',
     weight: 0,
     description: '',
     maxGroupSize: 3,
@@ -189,6 +208,7 @@ const create = async () => {
     const projectData: any = {
       title: newProject.value.title,
       submissionDeadline: newProject.value.submissionDeadline,
+      revisionDeadline: newProject.value.revisionDeadline,
       weight: newProject.value.weight / 100, // Convert percentage to decimal
       description: newProject.value.description,
       allowedExtensions: 'py,c,zip,java', // Default allowed extensions

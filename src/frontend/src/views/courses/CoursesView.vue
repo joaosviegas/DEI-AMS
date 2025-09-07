@@ -122,7 +122,6 @@ async function getCourses() {
     courses.splice(0, courses.length)
     courses.push(...(await RemoteService.getCourses()))
     loading.value = false
-    console.log('Courses loaded:', courses)
   } catch (error) {
     console.error('Error loading courses:', error)
     loading.value = false
@@ -131,14 +130,12 @@ async function getCourses() {
 
 // Open the edit dialog
 const editCourse = (course: CourseDto) => {
-  console.log('Editing course:', course)
   selectedCourse.value = course
   showEditDialog.value = true
 }
 
 // Open the delete dialog
 const deleteCourse = (course: CourseDto) => {
-  console.log('Preparing to delete course:', course)
   selectedCourse.value = course
   showDeleteDialog.value = true
 }

@@ -7,9 +7,10 @@ export default class TestDto extends EvaluationDto {
     date: string,
     weight: number,
     curricularUnitId: number,
+    revisionDeadline: string,
     id?: number
   ) {
-    super(title, date, weight, curricularUnitId, 'TEST', id)
+    super(title, date, weight, curricularUnitId, 'TEST', revisionDeadline, id)
   }
 
   // Factory method to create from backend response
@@ -19,6 +20,7 @@ export default class TestDto extends EvaluationDto {
       data.date,
       data.weight,
       data.curricularUnitId,
+      data.revisionDeadline,
       data.id
     )
   }

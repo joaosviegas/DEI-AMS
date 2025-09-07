@@ -127,7 +127,8 @@ export default class RemoteServices {
     const params = new URLSearchParams({
       title: test.title,
       date: test.date,
-      weight: test.weight.toString()
+      weight: test.weight.toString(),
+      revisionDeadline: test.revisionDeadline
     })
     return httpClient.post(`/tests/curricular-unit/${curricularUnitId}`, null, { params })
   }
@@ -136,7 +137,8 @@ export default class RemoteServices {
     const params = new URLSearchParams({
       title: test.title,
       date: test.date,
-      weight: test.weight.toString()
+      weight: test.weight.toString(),
+      revisionDeadline: test.revisionDeadline
     })
     return httpClient.put(`/tests/${testId}`, null, { params })
   }
@@ -159,7 +161,8 @@ export default class RemoteServices {
       title: project.title,
       weight: project.weight.toString(),
       submissionDeadline: project.submissionDeadline,
-      description: project.description || ''
+      description: project.description || '',
+      revisionDeadline: project.revisionDeadline || ''
     })
     
     if (project.maxGroupSize && project.maxGroupSize > 1) {
@@ -174,7 +177,8 @@ export default class RemoteServices {
       title: project.title,
       weight: project.weight.toString(),
       submissionDeadline: project.submissionDeadline,
-      description: project.description || ''
+      description: project.description || '',
+      revisionDeadline: project.revisionDeadline
     })
     
     if (project.allowedExtensions) {

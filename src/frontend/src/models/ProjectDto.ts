@@ -23,6 +23,7 @@ export default class ProjectDto extends EvaluationDto {
     weight: number,
     curricularUnitId: number,
     submissionDeadline: string,
+    revisionDeadline: string,
     isCompleted: boolean = false,
     isUpcoming: boolean = false,
     isIndividual: boolean = true,
@@ -38,7 +39,7 @@ export default class ProjectDto extends EvaluationDto {
     maxFileSize?: number,
     curricularUnitName?: string
   ) {
-    super(title, date, weight, curricularUnitId, 'PROJECT', id)
+    super(title, date, weight, curricularUnitId, 'PROJECT', revisionDeadline, id)
     this.submissionDeadline = submissionDeadline
     this.isCompleted = isCompleted
     this.isUpcoming = isUpcoming
@@ -63,6 +64,7 @@ export default class ProjectDto extends EvaluationDto {
       data.weight,
       data.curricularUnitId,
       data.submissionDeadline,
+      data.revisionDeadline,
       data.isCompleted || false,
       data.isUpcoming || false,
       data.isIndividual || true,

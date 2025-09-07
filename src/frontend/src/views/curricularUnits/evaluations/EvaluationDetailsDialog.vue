@@ -532,7 +532,7 @@ const saveAllGroupGrades = async () => {
           await RemoteService.saveEvaluationGrade(
             props.evaluation.id,
             memberGrade.studentEnrollmentId,
-            group.grade
+            group.grade,
           )
         }
       }

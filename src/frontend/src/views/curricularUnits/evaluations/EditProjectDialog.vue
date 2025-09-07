@@ -26,6 +26,17 @@
             </v-col>
             <v-col cols="12">
               <v-text-field
+                v-model="editProject.revisionDeadline"
+                label="Prazo de Revisão"
+                type="datetime-local"
+                :rules="[v => !!v || 'Prazo de revisão é obrigatório']"
+                required
+                variant="outlined"
+                hint="Prazo limite para revisão das submissões"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
                 v-model.number="editProject.weight"
                 label="Peso (%)"
                 type="number"
@@ -135,6 +146,7 @@ const projectType = ref('individual')
 const editProject = ref({
   title: '',
   submissionDeadline: '',
+  revisionDeadline: '',
   weight: 0,
   description: '',
   maxGroupSize: 1,
@@ -146,6 +158,7 @@ const editProject = ref({
 const originalProject = ref({
   title: '',
   submissionDeadline: '',
+  revisionDeadline: '',
   weight: 0,
   description: '',
   maxGroupSize: 1,
@@ -161,6 +174,7 @@ const localDialog = computed({
 const isFormValid = computed(() => {
   const base = editProject.value.title.trim() !== '' &&
                editProject.value.submissionDeadline !== '' &&
+               editProject.value.revisionDeadline !== '' &&
                editProject.value.weight > 0 &&
                editProject.value.weight <= 100 &&
                editProject.value.description.trim() !== ''
@@ -175,6 +189,7 @@ const isFormValid = computed(() => {
 const hasChanges = computed(() => {
   return editProject.value.title !== originalProject.value.title ||
          editProject.value.submissionDeadline !== originalProject.value.submissionDeadline ||
+         editProject.value.revisionDeadline !== originalProject.value.revisionDeadline ||
          editProject.value.weight !== originalProject.value.weight ||
          editProject.value.description !== originalProject.value.description ||
          editProject.value.maxGroupSize !== originalProject.value.maxGroupSize ||
@@ -204,6 +219,7 @@ const loadProjectData = () => {
   editProject.value = {
     title: project.title,
     submissionDeadline: formatDateTimeForInput(project.submissionDeadline),
+    revisionDeadline: formatDateTimeForInput(project.revisionDeadline),
     weight: Math.round(project.weight * 100), // Convert decimal to percentage
     description: project.description || '',
     maxGroupSize: project.maxGroupSize || 1,
@@ -240,6 +256,7 @@ const update = async () => {
     const projectData: any = {
       title: editProject.value.title,
       submissionDeadline: editProject.value.submissionDeadline,
+      revisionDeadline: editProject.value.revisionDeadline,
       weight: editProject.value.weight / 100, // Convert percentage to decimal
       description: editProject.value.description,
       allowedExtensions: editProject.value.allowedExtensions,

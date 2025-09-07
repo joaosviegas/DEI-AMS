@@ -25,6 +25,20 @@
             </v-col>
             <v-col cols="12">
               <v-text-field
+                v-model="newTest.revisionDeadline"
+                label="Prazo de Revisão"
+                type="datetime-local"
+                :rules="[
+                  v => !!v || 'Prazo de revisão é obrigatório',
+                  v => !newTest.date || new Date(v) > new Date(newTest.date) || 'Prazo de revisão deve ser posterior à data do teste'
+                ]"
+                required
+                variant="outlined"
+                hint="Data limite para pedidos de revisão de nota"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
                 v-model.number="newTest.weight"
                 label="Peso (%)"
                 type="number"
@@ -83,7 +97,8 @@ const loading = ref(false)
 const newTest = ref({
   title: '',
   date: '',
-  weight: 0
+  weight: 0,
+  revisionDeadline: ''
 })
 
 const localDialog = computed({
@@ -94,15 +109,19 @@ const localDialog = computed({
 const isFormValid = computed(() => {
   return newTest.value.title.trim() !== '' &&
          newTest.value.date !== '' &&
+         newTest.value.revisionDeadline !== '' &&
          newTest.value.weight >= 0 &&
-         newTest.value.weight <= 100
+         newTest.value.weight <= 100 &&
+         (!newTest.value.date || !newTest.value.revisionDeadline || 
+          new Date(newTest.value.revisionDeadline) > new Date(newTest.value.date))
 })
 
 const resetForm = () => {
   newTest.value = {
     title: '',
     date: '',
-    weight: 0
+    weight: 0,
+    revisionDeadline: ''
   }
   if (testForm.value) {
     testForm.value.resetValidation()
@@ -124,7 +143,8 @@ const create = async () => {
     const testData = {
       title: newTest.value.title,
       date: newTest.value.date,
-      weight: newTest.value.weight / 100 // Convert percentage to decimal
+      weight: newTest.value.weight / 100, // Convert percentage to decimal
+      revisionDeadline: newTest.value.revisionDeadline
     }
     
     await RemoteService.createTest(props.curricularUnitId, testData)

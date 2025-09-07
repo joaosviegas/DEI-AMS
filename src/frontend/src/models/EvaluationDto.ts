@@ -6,6 +6,7 @@ export default abstract class EvaluationDto {
   weight: number
   curricularUnitId: number
   type: 'TEST' | 'PROJECT'
+  revisionDeadline: string // ISO date string
 
   constructor(
     title: string,
@@ -13,6 +14,7 @@ export default abstract class EvaluationDto {
     weight: number,
     curricularUnitId: number,
     type: 'TEST' | 'PROJECT',
+    revisionDeadline: string,
     id?: number
   ) {
     this.id = id
@@ -21,5 +23,6 @@ export default abstract class EvaluationDto {
     this.weight = weight
     this.curricularUnitId = curricularUnitId
     this.type = type
+    this.revisionDeadline = revisionDeadline
   }
 }

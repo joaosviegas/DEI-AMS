@@ -31,6 +31,23 @@
           <v-row>
             <v-col cols="12">
               <v-text-field
+                v-model="editedTest.revisionDeadline"
+                label="Prazo de Revisão"
+                type="datetime-local"
+                :rules="[
+                  v => !!v || 'Prazo de revisão é obrigatório',
+                  v => !editedTest.date || new Date(v) > new Date(editedTest.date) || 'Prazo de revisão deve ser posterior à data do teste'
+                ]"
+                required
+                variant="outlined"
+                hint="Data limite para pedidos de revisão de nota"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
                 v-model.number="editedTest.weight"
                 label="Peso (%)"
                 type="number"
@@ -59,7 +76,7 @@
           text="Guardar Alterações" 
           @click="saveTest"
           :loading="loading"
-          :disabled="!valid"
+          :disabled="!valid || !hasChanges"
         ></v-btn>
       </v-card-actions>
     </v-card>
@@ -92,7 +109,17 @@ const editedTest = ref({
   id: 0,
   title: '',
   date: '',
-  weight: 0
+  weight: 0,
+  revisionDeadline: ''
+})
+
+// Store original values to detect changes
+const originalTest = ref({
+  id: 0,
+  title: '',
+  date: '',
+  weight: 0,
+  revisionDeadline: ''
 })
 
 const localDialog = computed({
@@ -106,15 +133,38 @@ const weightRules = [
   (v: number) => (v >= 0 && v <= 100) || 'Peso deve estar entre 0 e 100%',
 ]
 
+// Check if form has changes
+const hasChanges = computed(() => {
+  return editedTest.value.title !== originalTest.value.title ||
+         editedTest.value.date !== originalTest.value.date ||
+         editedTest.value.weight !== originalTest.value.weight ||
+         editedTest.value.revisionDeadline !== originalTest.value.revisionDeadline
+})
+
+const formatDateTimeForInput = (dateString: string): string => {
+  if (!dateString) return ''
+  
+  // Create date object and adjust for local timezone
+  const date = new Date(dateString)
+  const tzOffset = date.getTimezoneOffset() * 60000
+  const localDate = new Date(date.getTime() - tzOffset)
+  
+  return localDate.toISOString().slice(0, 16)
+}
+
 // Watch for test prop changes to populate form
 watch(() => props.test, (newTest) => {
   if (newTest) {
     editedTest.value = {
       id: newTest.id || 0,
       title: newTest.title || '',
-      date: newTest.date || '',
-      weight: (newTest.weight || 0) * 100 // Convert from decimal to percentage
+      date: formatDateTimeForInput(newTest.date || ''),
+      weight: (newTest.weight || 0) * 100, // Convert from decimal to percentage
+      revisionDeadline: formatDateTimeForInput(newTest.revisionDeadline || '')
     }
+    
+    // Store original values for change detection
+    originalTest.value = { ...editedTest.value }
   }
 }, { immediate: true })
 
@@ -131,8 +181,10 @@ const resetForm = () => {
     id: 0,
     title: '',
     date: '',
-    weight: 0
+    weight: 0,
+    revisionDeadline: ''
   }
+  originalTest.value = { ...editedTest.value }
 }
 
 const saveTest = async () => {
@@ -145,7 +197,8 @@ const saveTest = async () => {
     id: editedTest.value.id,
     title: editedTest.value.title,
     date: editedTest.value.date,
-    weight: editedTest.value.weight / 100 // Convert percentage to decimal
+    weight: editedTest.value.weight / 100, // Convert percentage to decimal
+    revisionDeadline: editedTest.value.revisionDeadline
   }
 
   try {

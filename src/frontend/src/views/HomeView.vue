@@ -146,6 +146,12 @@ const features = computed(() => {
     case 'ADMINISTRATOR':
       return [
         {
+          title: 'Unidades Curriculares',
+          description: 'Gerencie todas as unidades curriculares, professores e Alunos.',
+          icon: 'mdi-school',
+          route: '/curricular-units'
+        },
+        {
           title: 'Gestão de Pessoas',
           description: 'Adicione, edite e gerencie utilizadores do sistema.',
           icon: 'mdi-account-group',
@@ -157,11 +163,11 @@ const features = computed(() => {
           icon: 'mdi-book-multiple',
           route: '/courses'
         },
-        {
-          title: 'Unidades Curriculares',
-          description: 'Gerencie todas as unidades curriculares, professores e Alunos.',
-          icon: 'mdi-school',
-          route: '/curricular-units'
+                {
+          title: 'Calendário',
+          description: 'Consulte o seu calendário académico.',
+          icon: 'mdi-calendar',
+          route: '/calendar'
         },
         {
           title: 'Estatísticas',
@@ -172,29 +178,35 @@ const features = computed(() => {
       ];
     case 'MAIN_TEACHER':
       return [
-        {
-          title: 'Minhas UCs',
-          description: 'Consulte as UCs onde você é Professor Regente.',
-          icon: 'mdi-school',
-          route: '/curricular-units'
-        },
         {   
           title: 'Workflow de Revisões',
           description: 'Visualize as tarefas de correção que lhe faltam aprovar.',
           icon: 'mdi-clipboard-edit',
-          //route: TODO
+          route: '/workflow'
         },
-        {
+                {
           title: 'Alunos',
           description: 'Consulte informações sobre os Alunos das suas UCs.',
           icon: 'mdi-account-group',
           route: '/students'
         },
         {
+          title: 'Minhas UCs',
+          description: 'Consulte as UCs onde você é Professor Regente.',
+          icon: 'mdi-school',
+          route: '/curricular-units'
+        },
+        {
           title: 'Cursos',
-          description: 'Consulte informações sobre os cursos e gestão das suas pessoas.',
+          description: 'Consulte informações sobre os cursos.',
           icon: 'mdi-book-multiple',
           route: '/courses'
+        },
+        {
+          title: 'Calendário',
+          description: 'Consulte o calendário académico.',
+          icon: 'mdi-calendar',
+          route: '/calendar'
         },
         {
           title: 'Estatísticas',
@@ -205,17 +217,11 @@ const features = computed(() => {
       ];
     case 'TEACHING_ASSISTANT':
       return [
-        {
-          title: 'Unidades Curriculares',
-          description: 'Visualize as UCs onde você é professor assistente.',
-          icon: 'mdi-school',
-          route: '/curricular-units'
-        },
         {   
-          title: 'Workflow de Revisões',
+          title: 'Workflow de Notas',
           description: 'Visualize as tarefas de correção que lhe foram atribuídas.',
           icon: 'mdi-clipboard-edit',
-          //route: TODO
+          route: '/workflow'
         },
         {
           title: 'Alunos',
@@ -224,14 +230,43 @@ const features = computed(() => {
           route: '/students'
         },
         {
+          title: 'Unidades Curriculares',
+          description: 'Visualize as UCs onde você é professor assistente.',
+          icon: 'mdi-school',
+          route: '/curricular-units'
+        },
+        {
           title: 'Cursos',
           description: 'Consulte informações sobre os cursos relacionados.',
           icon: 'mdi-book-multiple',
           route: '/courses'
+        },
+        {
+          title: 'Calendário',
+          description: 'Consulte o seu calendário académico.',
+          icon: 'mdi-calendar',
+          route: '/calendar'
+        },
+        {
+          title: 'Estatísticas',
+          description: 'Visualize estatísticas do seu desempenho.',
+          icon: 'mdi-chart-bar',
+          route: '/statistics'
         }
       ];
     case 'STUDENT':
       return [
+        {
+          title: 'Prazos & Entregas',
+          description: 'Consulte as avaliações e as datas das mesmas.',
+          icon: 'mdi-clock-alert-outline',
+          route: '/deadlines'
+        },        {
+          title: 'Notas & Revisões',
+          description: 'Consulte as suas notas e pedidos de revisão.',
+          icon: 'mdi-clipboard-list',
+          route: '/workflow'
+        },
         {
           title: 'Minhas UCs',
           description: 'Visualize as UCs onde você está inscrito.',
@@ -239,16 +274,16 @@ const features = computed(() => {
           route: '/curricular-units'
         },
         {
-          title: 'Prazos & Entregas',
-          description: 'Consulte as avaliações e as datas das mesmas.',
-          icon: 'mdi-clock-alert-outline',
-          route: '/deadlines'
-        },
-        {
           title: 'Cursos',
           description: 'Visualize informações sobre cursos.',
           icon: 'mdi-book-multiple',
           route: '/courses'
+        },
+        {
+          title: 'Calendário',
+          description: 'Consulte o seu calendário académico.',
+          icon: 'mdi-calendar',
+          route: '/calendar'
         },
         {
           title: 'Estatísticas',

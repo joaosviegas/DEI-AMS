@@ -1,4 +1,4 @@
-# DEI Academic Management System - AcaMS
+# DEI Academic Management System - AMS
 
 ## Dependencies
 

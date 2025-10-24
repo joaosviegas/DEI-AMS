@@ -1,6 +1,37 @@
 <h1 align="center"> DEI Academic Management System - AMS </h1>
 
+<img src="src/frontend/public/dei-ams-hero-image.png" alt="AMS Project Banner" width="100%">
+
 This project was developed as an application for the DEI scholarship.
+
+The system's main goal is to centralize the management of Curricular Units (UCs), providing a single, functional interface for Students, Professors (Regents and Assistants), and Administrators to manage academic workflows. It handles everything from course enrollment and assessment creation to project submissions and a structured grade review process.
+
+## Implemented Features
+
+### Mandatory Features
+
+* **Course & UC Management:** View, create, update, and remove Courses and Curricular Units (UCs).
+* **People Management:** Manage users (Students, Assistants, Regents, Admins) and enroll/remove them from UCs.
+* **Class Visualization:** View all students and professors associated with a specific UC.
+* **Assessment Management:** Create and manage tests and projects, including their weights and deadlines.
+* **Grading System:** Allow professors to assign grades to students for tests and projects.
+* **Project Submissions:** Allow students to submit project files (individually or as a group).
+* **Group Management:** Automatically create and manage student groups for projects.
+* **Resource Management:** Upload and manage course materials, such as syllabi and project briefs.
+* **Grade Review Workflow:** A complete, multi-step process for students to request grade reviews and for professors to respond.
+* **Calendar:** View an assessment calendar with automatic conflict detection.
+* **Student Profile:** A dedicated view for students to see their enrolled UCs, grades, and pending assessments.
+
+### Additional Features
+
+To achieve a higher score, several advanced features were implemented:
+
+* **Email & In-App Notifications:** Automatic notifications for key events like new grades, project submissions, and review requests, using [MailCrab](https://github.com/tweedegolf/mailcrab) for local testing.
+* **Personalized Dashboards:** Custom views for Students (grades, deadlines), Professors (pending corrections, stats), and Assistants (grading tasks).
+* **Advanced UC Statistics:** A page showing grade distributions, averages per assessment, and the number of review requests.
+* **Multiple Project Submissions:** Allows students to submit multiple versions of a project, with only the last one being considered for grading.
+
+---
 
 ## Dependencies
 
